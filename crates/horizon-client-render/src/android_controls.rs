@@ -235,6 +235,9 @@ pub struct TouchControls {
     last_marker: Option<([f32; 2], Instant)>,
     last_sneak_tap: Option<Instant>,
     sprint_latched: bool,
+    /// AmeStar: forward and sprint are locked on, the joystick finger having lifted.
+    forward_locked: bool,
+    forward_had_move: bool,
 }
 
 impl Default for TouchControls {
@@ -282,6 +285,8 @@ impl Default for TouchControls {
             last_marker: None,
             last_sneak_tap: None,
             sprint_latched: false,
+            forward_locked: false,
+            forward_had_move: false,
         }
     }
 }
@@ -904,7 +909,34 @@ impl TouchControls {
             })
     }
     /// Coordinates are fractions of the drawable surface. Returns a look delta.
+    /// AmeStar's forward lock: the joystick pushed straight forward past its rim keeps forward
+    /// movement and sprint on after the finger lifts. A new touch on the joystick unlocks it.
+    fn forward_lock_step(&mut self) {
+        if !self.settings.forward_lock || self.settings.mode == Mode::Dpad {
+            self.forward_locked = false;
+            self.forward_had_move = false;
+            return;
+        }
+        let moving = self.fingers.values().find_map(|(role, point)| match role {
+            Role::Move(anchor) => Some((*anchor, *point)),
+            _ => None,
+        });
+        let has_move = moving.is_some();
+        if has_move && !self.forward_had_move {
+            self.forward_locked = false;
+        }
+        self.forward_had_move = has_move;
+        if let Some((anchor, point)) = moving {
+            let radius = self.placement(Control::Move).size / 2.0;
+            let x = (point[0] - anchor[0]) * self.aspect() / radius;
+            let y = (anchor[1] - point[1]) / radius;
+            if y > 1.0 && x.abs() < y * 0.5 {
+                self.forward_locked = true;
+            }
+        }
+    }
     pub fn update(&mut self, id: u64, point: [f32; 2], started: bool, ended: bool) -> [f32; 2] {
+        self.forward_lock_step();
         if self.custom_update(id, point, started, ended) {
             return [0.0; 2];
         }
@@ -1132,6 +1164,8 @@ impl TouchControls {
         self.latched_controls = 0;
         self.last_sneak_tap = None;
         self.sprint_latched = false;
+        self.forward_locked = false;
+        self.forward_had_move = false;
         self.pending = PadState::default();
         self.aim = None;
         self.tap_aim = None;
@@ -1252,6 +1286,15 @@ impl TouchControls {
                 Role::Button(b) => state.set(*b, true),
                 _ => {}
             }
+        }
+        if self.forward_locked
+            && !self
+                .fingers
+                .values()
+                .any(|(role, _)| matches!(role, Role::Move(_)))
+        {
+            state.left = [0.0, 1.0];
+            state.set(Button::LeftStick, true);
         }
         if !self.inventory_mode && !self.in_menu {
             for token in self.held_custom_tokens() {
@@ -2690,6 +2733,27 @@ mod tests {
         t.update(1, [0.13, 0.58], false, false);
         assert!(t.state().held(Button::LeftStick));
         t.update(1, [0.13, 0.62], false, false);
+        assert!(!t.state().held(Button::LeftStick));
+    }
+    #[test]
+    fn forward_lock_keeps_running_after_the_finger_lifts_until_the_joystick_is_touched() {
+        let mut t = TouchControls::default();
+        t.update(1, [0.13, 0.76], true, false);
+        t.update(1, [0.13, 0.58], false, false);
+        // Pushed straight forward past the rim: the lock arms on the next event.
+        t.update(1, [0.13, 0.58], false, true);
+        assert!(t.state().held(Button::LeftStick));
+        assert_eq!(t.state().left, [0.0, 1.0]);
+        // A new touch on the joystick unlocks it.
+        t.update(2, [0.13, 0.76], true, false);
+        t.update(2, [0.13, 0.76], false, false);
+        assert!(!t.state().held(Button::LeftStick));
+        // The setting turns it off.
+        t.update(2, [0.13, 0.76], false, true);
+        t.settings.forward_lock = false;
+        t.update(3, [0.13, 0.76], true, false);
+        t.update(3, [0.13, 0.58], false, false);
+        t.update(3, [0.13, 0.58], false, true);
         assert!(!t.state().held(Button::LeftStick));
     }
     #[test]

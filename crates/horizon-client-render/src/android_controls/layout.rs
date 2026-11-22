@@ -488,6 +488,9 @@ pub struct Settings {
     pub contextual_interact: bool,
     pub left_handed: bool,
     pub sprint_with_joystick: bool,
+    /// AmeStar: pushing the joystick straight forward past its rim locks forward movement and
+    /// sprint after the finger lifts, as in Amethyst; touching the joystick again unlocks it.
+    pub forward_lock: bool,
     pub swap_jump_sneak: bool,
     pub sensitivity: f32,
     pub sensitivity_horizontal: f32,
@@ -659,6 +662,7 @@ impl Default for Settings {
             contextual_interact: false,
             left_handed: false,
             sprint_with_joystick: false,
+            forward_lock: true,
             swap_jump_sneak: false,
             sensitivity: 1.0,
             sensitivity_horizontal: 1.0,
