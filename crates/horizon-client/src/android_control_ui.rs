@@ -1088,15 +1088,23 @@ pub fn point_between_strips(px: [f32; 2], scale: f32, left: f32) -> [f32; 2] {
 
 /// Where the hub's title ends, and the line under it ("Configure touch controls..."), from the
 /// hub's left edge.
+#[allow(dead_code)]
 const HUB_TITLE_END: f32 = 190.0;
 const HUB_LINE_END: f32 = 292.0;
+
+/// AmeStar: the handle at the top middle of the screen that opens the hub, in the hub's units.
+fn drawer_handle_rect(w: f32) -> [f32; 4] {
+    let (hw, hh) = (72.0, 20.0);
+    [(w - hw) * 0.5, 0.0, hw, hh]
+}
 
 /// The hub's Launcher button, in its header left of the controls' badge (drawn and hit there).
 /// On a hub too narrow for it beside the line under the title, the line goes; on one too narrow
 /// for it beside the title, there is none (the pause menu still has Launcher).
-fn hub_launcher_button(dx: f32, dy: f32, dw: f32) -> Option<[f32; 4]> {
-    let r = [dx + dw - 272.0, dy + 10.0, 76.0, 28.0];
-    (r[0] >= dx + HUB_TITLE_END).then_some(r)
+///
+/// AmeStar: removed on purpose. It quit the running game, which was easy to hit by accident.
+fn hub_launcher_button(_dx: f32, _dy: f32, _dw: f32) -> Option<[f32; 4]> {
+    None
 }
 
 fn button(b: &mut HudBatch, a: &HudAtlas, label: &str, x: f32, y: f32, w: f32) {
@@ -1795,45 +1803,28 @@ impl TouchUi {
             p[0] >= r[0] && p[0] <= r[0] + r[2] && p[1] >= r[1] && p[1] <= r[1] + r[3]
         };
 
-        let gui_unit = ui.batch.scale / ui.density;
-        let (btn_x, btn_y, btn_w, btn_h) = if self.goy_mode {
-            let (bw, bh) = (48.0, 42.0);
-            (
-                (settings.floating_menu_pos[0] * w).clamp(6.0, (w - bw - 6.0).max(6.0)),
-                (settings.floating_menu_pos[1] * h).clamp(4.0, (h - bh - 4.0).max(4.0)),
-                bw,
-                bh,
-            )
-        } else {
-            (
-                3.0 * gui_unit,
-                (3.0 + self.utility_offset_y) * gui_unit,
-                33.0 * gui_unit,
-                20.0 * gui_unit,
-            )
-        };
+        // AmeStar: no floating H or settings button. A small handle at the top middle of the
+        // screen opens the hub, by a tap or a swipe down.
+        let [btn_x, btn_y, btn_w, btn_h] = drawer_handle_rect(w);
         let btn_rect = [btn_x, btn_y, btn_w, btn_h];
 
-        if let Some((drag_id, offset, mut moved)) = self.floating_drag
+        if let Some((drag_id, offset, moved)) = self.floating_drag
             && drag_id == id
         {
             match phase {
                 TouchPhase::Moved => {
-                    if !self.goy_mode {
-                        return Some(InGameMenuAction::Close);
+                    // A swipe down from the handle opens the hub.
+                    if !self.floating_menu && p[1] - (btn_y + offset[1]) > 14.0 {
+                        self.floating_drag = None;
+                        self.floating_menu = true;
+                        self.open_anim.set(0.0);
+                        self.tab_anim.set(0.0);
+                        self.last_anim_tick.set(None);
+                        self.hub_scroll = 0.0;
+                        self.refresh_presets_cache(settings.control_style);
+                    } else {
+                        self.floating_drag = Some((drag_id, offset, moved));
                     }
-                    let nx = (p[0] - offset[0]).clamp(6.0, (w - btn_w - 6.0).max(6.0));
-                    let ny = (p[1] - offset[1]).clamp(4.0, (h - btn_h - 4.0).max(4.0));
-                    if (nx - btn_x).hypot(ny - btn_y) > 5.0 {
-                        moved = true;
-                    }
-                    if moved {
-                        settings.floating_menu_pos = [
-                            (nx / w.max(1.0)).clamp(0.03, 0.93),
-                            (ny / h.max(1.0)).clamp(0.02, 0.90),
-                        ];
-                    }
-                    self.floating_drag = Some((drag_id, offset, moved));
                     return Some(InGameMenuAction::Close);
                 }
                 TouchPhase::Ended | TouchPhase::Cancelled => {
@@ -2792,83 +2783,25 @@ impl TouchUi {
             hud_scale.clamp(0.0, 1.0)
         };
 
-        if bubble_alpha > 0.001 {
-            let gui_unit = ui.batch.scale / ui.density;
-            let (bx, by, bw, bh) = if settings.control_style == ControlStyle::Mcpe {
-                (
-                    3.0 * gui_unit,
-                    (3.0 + self.utility_offset_y) * gui_unit,
-                    33.0 * gui_unit,
-                    20.0 * gui_unit,
-                )
-            } else {
-                let (bw, bh) = (48.0, 42.0);
-                (
-                    (settings.floating_menu_pos[0] * w).clamp(6.0, (w - bw - 6.0).max(6.0)),
-                    (settings.floating_menu_pos[1] * h).clamp(4.0, (h - bh - 4.0).max(4.0)),
-                    bw,
-                    bh,
-                )
-            };
-            if settings.control_style == ControlStyle::Mcpe {
-                ui.fill(
-                    bx,
-                    by,
-                    bw,
-                    bh,
-                    color::with_alpha(rgba(16, 18, 24, 180), bubble_alpha),
-                );
-                ui.icon(
-                    Icon::HorizonLogo,
-                    bx + bw * 0.25,
-                    by + bh * 0.1,
-                    bh * 0.8,
-                    color::with_alpha(text_c, bubble_alpha),
-                );
-            } else {
-                ui.rounded(
-                    bx + 1.5,
-                    by + 3.0,
-                    bw,
-                    bh,
-                    14.0,
-                    color::with_alpha(rgba(0, 0, 0, 135), bubble_alpha),
-                );
-                ui.rounded(
-                    bx,
-                    by,
-                    bw,
-                    bh,
-                    14.0,
-                    color::with_alpha(
-                        if self.floating_menu { accent } else { card_bg },
-                        bubble_alpha,
-                    ),
-                );
-                ui.stroke_rounded(
-                    bx,
-                    by,
-                    bw,
-                    bh,
-                    14.0,
-                    1.6,
-                    color::with_alpha(accent, bubble_alpha),
-                );
-                ui.icon(
-                    Icon::MenuEquals,
-                    bx + (bw - 22.0) * 0.5,
-                    by + (bh - 22.0) * 0.5,
-                    22.0,
-                    color::with_alpha(
-                        if self.floating_menu {
-                            accent_fg
-                        } else {
-                            accent_hi
-                        },
-                        bubble_alpha,
-                    ),
-                );
-            }
+        if bubble_alpha > 0.001 && !self.floating_menu {
+            // AmeStar: a slim handle at the top middle, no floating H or settings button.
+            let [bx, by, bw, bh] = drawer_handle_rect(w);
+            ui.rounded(
+                bx,
+                by - bh * 0.5,
+                bw,
+                bh * 1.5,
+                bh * 0.6,
+                color::with_alpha(rgba(16, 18, 24, 150), bubble_alpha),
+            );
+            ui.rounded(
+                bx + bw * 0.3,
+                by + bh * 0.45,
+                bw * 0.4,
+                3.0,
+                1.5,
+                color::with_alpha(text_c, bubble_alpha * 0.8),
+            );
         }
 
         if !self.floating_menu {
@@ -8319,23 +8252,12 @@ mod tests {
         );
     }
 
-    /// Starling: the hub's Launcher sits in its header between the title's line and the controls'
-    /// badge, or not at all when the hub is too narrow for it.
+    /// AmeStar: the hub has no Launcher button, since it quit the running game.
     #[test]
-    fn the_hubs_launcher_button_fits_beside_its_title_or_is_not_there() {
-        // The widest hub (`hub_metrics`): beside the title and the line under it.
-        let (dx, dw) = (10.0, 610.0);
-        let r = hub_launcher_button(dx, 20.0, dw).expect("a wide hub has it");
-        assert!(r[0] + r[2] < dx + dw - 188.0, "it ends before the badge");
-        assert!(
-            r[0] >= dx + HUB_LINE_END,
-            "it starts after the title's line"
-        );
-        // A narrower one: beside the title, the line gone.
-        let r = hub_launcher_button(dx, 20.0, 500.0).expect("a middle hub has it");
-        assert!(r[0] >= dx + HUB_TITLE_END && r[0] < dx + HUB_LINE_END);
-        // The narrowest (352): none.
-        assert!(hub_launcher_button(dx, 20.0, 352.0).is_none());
+    fn the_hub_has_no_launcher_button() {
+        for dw in [610.0, 500.0, 352.0] {
+            assert!(hub_launcher_button(10.0, 20.0, dw).is_none());
+        }
     }
 
     /// The hub's "..." and its "H" button drawn between a camera cutout's strips (as

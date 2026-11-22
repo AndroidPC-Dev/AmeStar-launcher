@@ -229,8 +229,6 @@ fn pause_icon_focus_ids(friends: bool) -> Vec<u8> {
         .collect()
 }
 const SPLIT_SETTINGS: &str = "horizon.pages.split_settings";
-/// Starling on Android: the row back to the launcher (`ha_launcher`), the world saved first.
-const LAUNCHER: &str = "starling.launcher.button";
 /// The pause menu's first id for the pages crates registered there: id `ADDED_PAGES + i` opens
 /// registered page `i`.
 const ADDED_PAGES: u8 = 40;
@@ -559,10 +557,6 @@ impl Game<'_> {
             .then_some((SPLIT_SETTINGS, 30))
             .into_iter()
             .chain(added)
-            .chain(
-                (cfg!(target_os = "android") && !self.options.split_guest)
-                    .then_some((LAUNCHER, 31)),
-            )
     }
     pub(super) fn pause_click(&mut self) -> Result<()> {
         let (w, h) = {

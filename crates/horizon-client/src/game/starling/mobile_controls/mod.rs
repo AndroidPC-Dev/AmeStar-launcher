@@ -1164,11 +1164,18 @@ impl Game<'_> {
             self.mobile.ui.virtual_mouse = false;
             return;
         }
+        let was_on = self.mobile.ui.virtual_mouse;
         self.mobile.ui.virtual_mouse = true;
         if let Some(b) = self.gui_batch() {
             self.mobile
                 .ui
                 .sync_viewport_cursor(&mut self.cursor, [b.width, b.height]);
+            // AmeStar: the pointer shows up in the middle of the screen, as in Amethyst, not
+            // wherever the last touch or the top-left corner left it.
+            if !was_on && b.width > 1.0 && b.height > 1.0 {
+                self.cursor = (b.width * 0.5, b.height * 0.5);
+                self.mobile.ui.cancel_relative();
+            }
         }
     }
 
