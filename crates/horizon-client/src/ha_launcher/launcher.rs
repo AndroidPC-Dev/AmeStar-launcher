@@ -223,7 +223,7 @@ impl Launcher {
             self.catalog.config.screen.immersive,
             self.catalog.config.screen.avoid_cutout,
         );
-        crate::android::apply_display_settings(&self.catalog.config.game_settings(&self.home));
+        crate::android::apply_launcher_display_settings(&self.catalog.config.game_settings(&self.home));
     }
     fn fail(&mut self, error: impl std::fmt::Display) {
         log::error!("{error}");

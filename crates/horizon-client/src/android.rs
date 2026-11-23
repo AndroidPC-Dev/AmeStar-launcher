@@ -111,11 +111,22 @@ pub(crate) fn with_activity<R>(
 }
 
 pub(crate) fn apply_display_settings(settings: &horizon_client::settings::Settings) {
+    apply_display(settings, None);
+}
+
+/// AmeStar: the launcher is always upright (portrait), as Amethyst is; the game keeps the
+/// orientation its own settings ask for, landscape by default.
+pub(crate) fn apply_launcher_display_settings(settings: &horizon_client::settings::Settings) {
+    const PORTRAIT: i32 = 1;
+    apply_display(settings, Some(PORTRAIT));
+}
+
+fn apply_display(settings: &horizon_client::settings::Settings, orientation: Option<i32>) {
     use horizon_client::android_display::DisplayOption as D;
     let (width, height, _) = D::ASPECTS[D::Aspect.value(settings) as usize];
     let display = [
         D::Cutout.value(settings),
-        D::Orientation.value(settings),
+        orientation.unwrap_or_else(|| D::Orientation.value(settings)),
         D::Rotation.value(settings),
         width,
         height,
