@@ -388,15 +388,28 @@ pub fn convert(json: &str, aspect: f32) -> Result<Imported, String> {
 }
 
 impl Settings {
-    /// Turns every `.json` file in `<game folder>/amethyst-controls/` into a GoyControl preset
-    /// and renames it `.json.imported` (`.json.failed` when it is not an Amethyst layout), so
-    /// that dropping a layout in that folder is all an import takes. The folder is made when
-    /// it is missing.
-    pub fn import_amethyst_controls(game_home: &Path) -> Vec<PresetMeta> {
-        let dir = game_home.join(IMPORT_DIR);
-        let _ = std::fs::create_dir_all(&dir);
+    /// Turns Amethyst layouts into GoyControl presets saved in `game_home`, and renames each file
+    /// `.json.imported` (`.json.failed` when it is not an Amethyst layout), so that dropping a
+    /// layout in a folder is all an import takes. Every `.json` in an `amethyst-controls/`
+    /// folder counts, and so does a loose `.json` in the folder itself that is an Amethyst layout
+    /// (other files there are left alone). The folders searched are `game_home` and each of
+    /// `also_in` (the game's main folder, which is above a profile's own folder); the
+    /// `amethyst-controls/` folder is made in each, so there is somewhere to drop the file.
+    pub fn import_amethyst_controls(game_home: &Path, also_in: &[&Path]) -> Vec<PresetMeta> {
         let mut made = Vec::new();
-        for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+        for root in std::iter::once(game_home).chain(also_in.iter().copied()) {
+            let dir = root.join(IMPORT_DIR);
+            let _ = std::fs::create_dir_all(&dir);
+            for (folder, only_layouts) in [(&dir, false), (&root.to_path_buf(), true)] {
+                made.extend(Self::import_folder(game_home, folder, only_layouts));
+            }
+        }
+        made
+    }
+
+    fn import_folder(game_home: &Path, folder: &Path, only_layouts: bool) -> Vec<PresetMeta> {
+        let mut made = Vec::new();
+        for entry in std::fs::read_dir(folder).into_iter().flatten().flatten() {
             let path = entry.path();
             let Some(stem) = path
                 .file_name()
@@ -409,6 +422,9 @@ impl Settings {
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
+            if only_layouts && !text.contains("mControlDataList") {
+                continue;
+            }
             // Renamed first: the preset helpers below list presets, which looks here again.
             let imported = path.with_file_name(format!("{stem}.json.imported"));
             if std::fs::rename(&path, &imported).is_err() {
@@ -563,7 +579,7 @@ mod tests {
         )
         .unwrap();
         std::fs::write(dir.join("junk.json"), "{}").unwrap();
-        let made = Settings::import_amethyst_controls(&home);
+        let made = Settings::import_amethyst_controls(&home, &[]);
         assert_eq!(made.len(), 1);
         assert_eq!(made[0].name, "Amethyst: mine");
         let loaded = Settings::load_preset(&home, ControlStyle::GoyControl, &made[0].id);
@@ -571,9 +587,29 @@ mod tests {
         assert_eq!(loaded.custom_buttons[0].key, "key.keyboard.space");
         assert!(dir.join("mine.json.imported").exists());
         assert!(dir.join("junk.json.failed").exists());
-        assert!(Settings::import_amethyst_controls(&home).is_empty());
+        assert!(Settings::import_amethyst_controls(&home, &[]).is_empty());
         let _ = std::fs::remove_dir_all(&home);
     }
+    #[test]
+    fn a_loose_layout_in_the_main_folder_is_found_and_other_json_is_left_alone() {
+        let root = std::env::temp_dir().join(format!("amestar-root-{}", std::process::id()));
+        let profile = root.join("profile");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&profile).unwrap();
+        std::fs::write(
+            root.join("pad.json"),
+            r#"{"mControlDataList":[{"name":"a","keycodes":[65],"dynamicX":"0","dynamicY":"0",
+            "width":50.0,"height":50.0,"displayInGame":true,"displayInMenu":true}]}"#,
+        )
+        .unwrap();
+        std::fs::write(root.join("servers.json"), "{\"a\":1}").unwrap();
+        let made = Settings::import_amethyst_controls(&profile, &[root.as_path()]);
+        assert_eq!(made.len(), 1);
+        assert!(root.join("servers.json").exists());
+        assert!(root.join("pad.json.imported").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
     #[test]
     fn other_json_is_refused() {
         assert!(convert("{}", 2.2).is_err());

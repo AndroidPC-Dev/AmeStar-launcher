@@ -1571,6 +1571,8 @@ pub fn main(
     // SAFETY: no other thread of ours runs yet; the game reads these from its threads afterwards.
     unsafe {
         std::env::set_var("HORIZON_HOME", &home);
+        // AmeStar: the game's main folder, above the profile's own, where layouts to import may be dropped.
+        std::env::set_var("AMESTAR_ROOT", &folder);
         std::env::set_var("HORIZON_PRIVATE", &private);
         for (name, value) in &env {
             std::env::set_var(name, value);

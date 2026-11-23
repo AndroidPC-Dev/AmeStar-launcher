@@ -629,7 +629,11 @@ impl TouchUi {
 
     pub fn refresh_presets_cache(&mut self, style: crate::android_controls::ControlStyle) {
         // AmeStar: Amethyst layouts dropped in `amethyst-controls/` become presets here.
-        crate::android_controls::Settings::import_amethyst_controls(std::path::Path::new("."));
+        let main_folder = std::env::var_os("AMESTAR_ROOT").map(std::path::PathBuf::from);
+        crate::android_controls::Settings::import_amethyst_controls(
+            std::path::Path::new("."),
+            main_folder.as_deref().as_slice(),
+        );
         self.cached_presets =
             crate::android_controls::Settings::list_presets(std::path::Path::new("."), style);
         self.cached_presets_style = Some(style);
