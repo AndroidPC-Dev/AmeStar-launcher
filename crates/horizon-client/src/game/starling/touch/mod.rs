@@ -1824,6 +1824,14 @@ impl Game<'_> {
         }
     }
     /// How far the on-screen keyboard covers the window, in pixels (Android).
+    /// AmeStar's "Keyboard panning" setting: the chat moves up over the on-screen keyboard.
+    fn keyboard_panning(&self) -> bool {
+        #[cfg(target_os = "android")]
+        return self.mobile.controls.settings.keyboard_panning;
+        #[cfg(not(target_os = "android"))]
+        true
+    }
+
     fn keyboard_height(&self) -> u32 {
         #[cfg(target_os = "android")]
         if self.touch.keyboard {
@@ -1836,7 +1844,11 @@ impl Game<'_> {
     /// point on the screen adds to its height to be where the chat lays it out (#245, #226).
     pub(in crate::game) fn chat_lift(&self, scale: f32) -> f32 {
         let height = self.keyboard_height();
-        if self.screen != Screen::Chat || height == 0 || scale <= 0.0 {
+        if self.screen != Screen::Chat
+            || height == 0
+            || scale <= 0.0
+            || !self.keyboard_panning()
+        {
             return 0.0;
         }
         height as f32 / scale
@@ -1846,7 +1858,10 @@ impl Game<'_> {
     /// pointer over it takes [`Self::chat_lift`] back.
     pub(super) fn lift_over_keyboard(&self, batch: &mut HudBatch) {
         let height = self.keyboard_height();
-        if self.screen != Screen::Chat || height == 0 {
+        if self.screen != Screen::Chat
+            || height == 0
+            || !self.keyboard_panning()
+        {
             return;
         }
         let lift = self.chat_lift(batch.scale);

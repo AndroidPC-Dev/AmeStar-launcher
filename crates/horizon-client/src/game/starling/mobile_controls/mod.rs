@@ -1533,6 +1533,14 @@ impl Game<'_> {
                     self.mobile.controls.settings.analog_movement ^= true;
                     self.mobile.controls.settings.save()?;
                 }
+                InGameMenuAction::ToggleForwardLock => {
+                    self.mobile.controls.settings.forward_lock ^= true;
+                    self.mobile.controls.settings.save()?;
+                }
+                InGameMenuAction::ToggleKeyboardPanning => {
+                    self.mobile.controls.settings.keyboard_panning ^= true;
+                    self.mobile.controls.settings.save()?;
+                }
                 InGameMenuAction::ToggleInteractionLook => {
                     self.mobile.controls.settings.attack_button_look ^= true;
                     self.mobile.controls.settings.save()?;

@@ -178,6 +178,8 @@ pub enum InGameMenuAction {
     CycleJoystickArea,
     ToggleSplitTouch,
     ToggleAnalogMovement,
+    ToggleForwardLock,
+    ToggleKeyboardPanning,
     ToggleInteractionLook,
     ToggleInvertY,
     ToggleLeftHanded,
@@ -2605,6 +2607,12 @@ impl TouchUi {
                 if inside([cx, body_y + 368., cw, 46.]) {
                     return Some(InGameMenuAction::ToggleAnalogMovement);
                 }
+                if inside([cx, body_y + 422., cw, 46.]) {
+                    return Some(InGameMenuAction::ToggleForwardLock);
+                }
+                if inside([cx, body_y + 476., cw, 46.]) {
+                    return Some(InGameMenuAction::ToggleKeyboardPanning);
+                }
                 // Split Touch (Aim & Look) (y = body_y + 314.0, h = 46.0)
                 let spl_y = body_y + 314.0;
                 if inside([cx, spl_y, cw, 46.0]) {
@@ -2925,7 +2933,7 @@ impl TouchUi {
         let tab_slide = (1.0 - tab_ease) * 14.0;
         let content_height = match self.hub_tab {
             0 => 502.0,
-            1 => 430.0,
+            1 => 540.0,
             2 => 470.0,
             3 => 350.0,
             _ => 340.0,
@@ -3392,6 +3400,22 @@ impl TouchUi {
                     &crate::lang::get("starling.controls.analog"),
                     &crate::lang::get("starling.controls.analog_hint"),
                     Some(settings.analog_movement),
+                    None,
+                );
+                draw_toggle_row(
+                    &mut ui,
+                    body_y + 422.,
+                    &crate::lang::get("amestar.controls.forward_lock"),
+                    &crate::lang::get("amestar.controls.forward_lock_hint"),
+                    Some(settings.forward_lock),
+                    None,
+                );
+                draw_toggle_row(
+                    &mut ui,
+                    body_y + 476.,
+                    &crate::lang::get("amestar.controls.keyboard_panning"),
+                    &crate::lang::get("amestar.controls.keyboard_panning_hint"),
+                    Some(settings.keyboard_panning),
                     None,
                 );
             }
