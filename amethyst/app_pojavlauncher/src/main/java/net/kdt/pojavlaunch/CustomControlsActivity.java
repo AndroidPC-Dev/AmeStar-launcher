@@ -70,6 +70,13 @@ public class CustomControlsActivity extends BaseActivity implements EditorExitab
 		});
 		mControlLayout.setModifiable(true);
 		try {
+			java.io.File layoutFile = new java.io.File(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
+			if (!layoutFile.exists()) {
+				// A control profile that is gone (or a first start): use the bundled default
+				java.io.File folder = layoutFile.getParentFile();
+				String folderPath = folder == null ? Tools.CTRLMAP_PATH : folder.getAbsolutePath();
+				Tools.copyAssetFile(this, "default.json", folderPath, layoutFile.getName(), false);
+			}
 			mControlLayout.loadLayout(LauncherPreferences.PREF_DEFAULTCTRL_PATH);
 		}catch (IOException e) {
 			Tools.showError(this, e);

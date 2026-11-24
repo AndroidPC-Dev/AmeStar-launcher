@@ -129,7 +129,7 @@ public final class Tools {
 
     // New since 3.3.1
     public static String DIR_ACCOUNT_NEW;
-    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/Amethyst";
+    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/AmeStar";
     public static String DIR_GAME_NEW;
     public static String GAME_PROFILES_FILE;
 
@@ -155,11 +155,24 @@ public final class Tools {
     public static String[] sAsmVersion = null;
 
 
-    private static File getPojavStorageRoot(Context ctx) {
+    /** AmeStar's game folder in the phone's shared storage, where files can be moved in and out. */
+    public static File getSharedRoot() {
+        return new File(Environment.getExternalStorageDirectory(), "AmeStar");
+    }
+
+    /** Whether the all-files permission, needed for the shared folder, is granted. */
+    public static boolean hasAllFilesAccess() {
+        return SDK_INT < 30 ? true : Environment.isExternalStorageManager();
+    }
+
+    public static File getPojavStorageRoot(Context ctx) {
+        if(SDK_INT >= 30 && Environment.isExternalStorageManager()) {
+            return getSharedRoot();
+        }
         if(SDK_INT >= 29) {
             return ctx.getExternalFilesDir(null);
         }else{
-            return new File(Environment.getExternalStorageDirectory(),"games/Amethyst");
+            return getSharedRoot();
         }
     }
 

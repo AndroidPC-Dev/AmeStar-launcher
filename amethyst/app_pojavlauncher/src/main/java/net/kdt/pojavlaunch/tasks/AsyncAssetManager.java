@@ -74,7 +74,10 @@ public class AsyncAssetManager {
                 // controlmap till rewrite anyway so this is fiiine.
                 try (InputStream is = ctx.getAssets().open("default.json")) {
                     String assetSha1 = new String(org.apache.commons.codec.binary.Hex.encodeHex(org.apache.commons.codec.digest.DigestUtils.sha1(is)));
-                    if (!Tools.compareSHA1(new File(Tools.CTRLDEF_FILE), assetSha1)) {
+                    if (!new File(Tools.CTRLDEF_FILE).exists()) {
+                        // First start: the editor needs default.json to exist
+                        Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, false);
+                    } else if (!Tools.compareSHA1(new File(Tools.CTRLDEF_FILE), assetSha1)) {
                         Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, "new_default.json" , false);
                     } else if (!new File(Tools.CTRLMAP_PATH+"/new_default.json").exists())
                     Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, false);
