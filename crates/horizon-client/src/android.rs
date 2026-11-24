@@ -116,9 +116,13 @@ pub(crate) fn apply_display_settings(settings: &horizon_client::settings::Settin
 
 /// AmeStar: the launcher is always upright (portrait), as Amethyst is; the game keeps the
 /// orientation its own settings ask for, landscape by default.
-pub(crate) fn apply_launcher_display_settings(settings: &horizon_client::settings::Settings) {
+pub(crate) fn apply_launcher_display_settings(
+    settings: &horizon_client::settings::Settings,
+    landscape: bool,
+) {
+    const LANDSCAPE: i32 = 0;
     const PORTRAIT: i32 = 1;
-    apply_display(settings, Some(PORTRAIT));
+    apply_display(settings, Some(if landscape { LANDSCAPE } else { PORTRAIT }));
 }
 
 fn apply_display(settings: &horizon_client::settings::Settings, orientation: Option<i32>) {
