@@ -1844,9 +1844,6 @@ public final class Tools {
     public static boolean hasOnlineProfile(){
         return true; // AmeStar is offline-first: never block on a missing online account
     }
-        }
-        return false;
-    }
 
     public static void hasNoOnlineProfileDialog(Activity activity, @Nullable Runnable run, @Nullable String customTitle, @Nullable String customMessage){
         if (hasOnlineProfile() && !Tools.isDemoProfile(activity)){
