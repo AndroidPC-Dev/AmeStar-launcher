@@ -2,6 +2,11 @@ name: amethyst-android
 
 on:
   workflow_dispatch:
+    inputs:
+      light:
+        description: 'Skip the bundled Java 8 runtime (much smaller APK, UI testing only; the game cannot start)'
+        type: boolean
+        default: true
 
 concurrency:
   group: amethyst-android-${{ github.ref }}
@@ -22,6 +27,7 @@ jobs:
           java-version: '21'
 
       - name: Get JRE 8
+        if: ${{ !inputs.light }}
         uses: dawidd6/action-download-artifact@v9
         with:
           workflow: build.yml
