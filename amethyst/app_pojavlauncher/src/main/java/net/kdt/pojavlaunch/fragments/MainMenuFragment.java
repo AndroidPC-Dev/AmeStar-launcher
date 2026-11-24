@@ -10,12 +10,17 @@ import static net.kdt.pojavlaunch.Tools.shareLog;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.OpenableColumns;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -35,12 +40,19 @@ import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
 
     private mcVersionSpinner mVersionSpinner;
+
+    private final ActivityResultLauncher<String[]> mContentPicker = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(), this::installContent);
 
     public MainMenuFragment(){
         super(R.layout.fragment_launcher);
@@ -62,13 +74,9 @@ public class MainMenuFragment extends Fragment {
         mNewsButton.setOnClickListener(v -> Tools.openURL(requireActivity(), Tools.URL_HOME));
         mDiscordButton.setOnClickListener(v -> Tools.openURL(requireActivity(), getString(R.string.discord_invite)));
         mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
-        if (hasOnlineProfile()) {
-            mInstallJarButton.setOnClickListener(v -> runInstallerWithConfirmation(false));
-            mInstallJarButton.setOnLongClickListener(v -> {
-                runInstallerWithConfirmation(true);
-                return true;
-            });
-        } else mInstallJarButton.setOnClickListener(v -> hasNoOnlineProfileDialog(requireActivity()));
+        // AmeStar: Amethyst's "Execute a .jar" row installs Starling content instead
+        mInstallJarButton.setText("Install .starling / .hmod file");
+        mInstallJarButton.setOnClickListener(v -> mContentPicker.launch(new String[]{"*/*"}));
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         mPlayButton.setOnClickListener(v -> {
@@ -116,6 +124,33 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
+    }
+
+    /** Copies a picked .starling / .hmod / .zip file into the current profile's content folder. */
+    private void installContent(@Nullable Uri uri) {
+        if (uri == null) return;
+        String name = "content";
+        try (Cursor c = requireContext().getContentResolver().query(uri, null, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int index = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (index >= 0) name = c.getString(index);
+            }
+        }
+        name = new File(name).getName();
+        File dir = new File(getCurrentProfileDirectory(), "starling-content");
+        File target = new File(dir, name);
+        try (InputStream in = requireContext().getContentResolver().openInputStream(uri)) {
+            if (in == null) throw new IOException("cannot open " + name);
+            if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("cannot create " + dir);
+            try (OutputStream out = new FileOutputStream(target)) {
+                byte[] buffer = new byte[65536];
+                int n;
+                while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
+            }
+            Toast.makeText(requireContext(), name + " added to " + dir.getName(), Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            Toast.makeText(requireContext(), "Could not add " + name + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void runInstallerWithConfirmation(boolean isCustomArgs) {

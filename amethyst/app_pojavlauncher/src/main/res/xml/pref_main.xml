@@ -13,14 +13,116 @@
         android:title="@string/preference_category_main_categories"
         >
 
-        <Preference
-            android:key="video_screen_setting"
-            android:title="@string/preference_video_title"
-            android:summary="@string/preference_video_description"
-            android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceVideoFragment"
-            android:icon="@drawable/ic_setting_video"
-            />
 
+        <Preference
+            android:key="st_page_general"
+            android:title="General"
+            android:summary="How far you see, brightness and presets."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_video"
+            >
+            <extra android:name="page" android:value="general" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_display"
+            android:title="Display"
+            android:summary="Screen orientation, aspect ratio, camera cutout and safe zones."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_video"
+            >
+            <extra android:name="page" android:value="display" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_quality"
+            android:title="Quality"
+            android:summary="The sky and weather, lighting, textures and the image."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_video"
+            >
+            <extra android:name="page" android:value="quality" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_performance"
+            android:title="Performance"
+            android:summary="Chunk loading, culling and power use."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_video"
+            >
+            <extra android:name="page" android:value="performance" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_shaders"
+            android:title="Shader packs"
+            android:summary="Shader packs, Starling Visuals and their options."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="shaders" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_advanced"
+            android:title="Advanced"
+            android:summary="How frames reach the screen, and the performance overlay."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="advanced" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_hdr"
+            android:title="HDR"
+            android:summary="Brighter-than-white output on an HDR display."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="hdr" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_extras"
+            android:title="Extras"
+            android:summary="Optional conveniences. Every one is off by default."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="extras" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_skin"
+            android:title="Skin &amp; name"
+            android:summary="Your offline name and skin."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="skin" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_mods"
+            android:title="Mods &amp; content"
+            android:summary="Native mods, .hmod content mods and packs."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="mods" />
+        </Preference>
+
+        <Preference
+            android:key="st_page_diagnostics"
+            android:title="Diagnostics &amp; files"
+            android:summary="Stats overlay, crash reports, updates and storage."
+            android:fragment="net.kdt.pojavlaunch.prefs.screens.StarlingSettingsFragment"
+            android:icon="@drawable/ic_setting_misc"
+            >
+            <extra android:name="page" android:value="diagnostics" />
+        </Preference>
 
         <Preference
             android:key="control_screen_setting"
@@ -30,29 +132,6 @@
             android:icon="@drawable/ic_menu_custom_controls"
             />
 
-        <Preference
-            android:key="java_screen_setting"
-            android:title="@string/preference_java_title"
-            android:summary="@string/preference_java_description"
-            android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceJavaFragment"
-            android:icon="@drawable/ic_setting_java_runtime"
-            />
-
-        <Preference
-            android:key="misc_screen_setting"
-            android:title="@string/preference_misc_title"
-            android:summary="@string/preference_misc_description"
-            android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceMiscellaneousFragment"
-            android:icon="@drawable/ic_setting_misc"
-            />
-
-
-        <Preference
-            android:key="experimental_screen_setting"
-            android:title="@string/preference_experimental_title"
-            android:summary="@string/preference_experimental_description"
-            android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceExperimentalFragment"
-            />
     </PreferenceCategory>
 
     <SwitchPreference
