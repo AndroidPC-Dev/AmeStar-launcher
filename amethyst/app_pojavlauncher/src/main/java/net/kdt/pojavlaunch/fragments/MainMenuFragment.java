@@ -36,6 +36,7 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.modloaders.LWJGL3ifyUtils;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.utils.ExistingGameFiles;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
@@ -49,6 +50,9 @@ import java.util.List;
 
 public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
+
+    /** The one version the Starling engine plays. */
+    private static final String STARLING_VERSION = "26.3";
 
     private mcVersionSpinner mVersionSpinner;
 
@@ -121,16 +125,46 @@ public class MainMenuFragment extends Fragment {
      * own process, straight into the game or, the first time, its setup.
      */
     private void startStarling() {
-        Context context = requireContext();
+        final Context context = requireContext();
         try {
             Class.forName("io.github.juanluci.starling.GameActivity");
         } catch (ClassNotFoundException e) {
             Toast.makeText(context, "This build has no Starling engine in it", Toast.LENGTH_LONG).show();
             return;
         }
+        final File minecraft = new File(Tools.DIR_GAME_NEW);
+        // First take what another launcher on the phone (Amethyst, Pojav, Mojo...) already has of 26.3
+        final AlertDialog looking = new AlertDialog.Builder(context)
+                .setTitle("AmeStar")
+                .setMessage("Looking for Minecraft 26.3 files in other launchers…")
+                .setCancelable(false)
+                .show();
+        new Thread(() -> {
+            String result = "";
+            try {
+                for (File source : ExistingGameFiles.find(STARLING_VERSION, minecraft)) {
+                    final String name = source.getParentFile() == null ? source.getName() : source.getParentFile().getName();
+                    runOnUiThread(() -> looking.setMessage("Copying 26.3 files from " + name + "…"));
+                    int copied = ExistingGameFiles.copy(source, minecraft, STARLING_VERSION, (what, n) ->
+                            runOnUiThread(() -> looking.setMessage("Copying files from " + name + ": " + n)));
+                    result = "Reused " + copied + " files from " + name;
+                    break;
+                }
+            } catch (IOException e) {
+                result = "Could not copy from another launcher: " + e.getMessage();
+            }
+            final String message = result;
+            runOnUiThread(() -> {
+                looking.dismiss();
+                if (!message.isEmpty()) Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+                launchStarling(context, minecraft);
+            });
+        }, "amestar-existing-files").start();
+    }
+
+    private void launchStarling(Context context, File minecraft) {
         File data = context.getFilesDir();
         try {
-            File minecraft = new File(Tools.DIR_GAME_NEW);
             if (!minecraft.isDirectory() && !minecraft.mkdirs()) throw new IOException("cannot create " + minecraft);
             writeText(new File(data, "amestar-minecraft-root"), minecraft.getAbsolutePath());
             // The engine starts the game, not its launcher, when this file is there
@@ -143,6 +177,11 @@ public class MainMenuFragment extends Fragment {
         game.setClassName(context.getPackageName(), "io.github.juanluci.starling.GameActivity");
         game.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(game);
+    }
+
+    private void runOnUiThread(Runnable r) {
+        android.app.Activity activity = getActivity();
+        if (activity != null) activity.runOnUiThread(r);
     }
 
     private static void writeText(File file, String text) throws IOException {
