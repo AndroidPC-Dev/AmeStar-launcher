@@ -18,6 +18,7 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -136,6 +137,39 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="This application is intended to run a 3rd-party piece of software which cannot be managed using the activity's saved instance state. This service is used for background persistence of this piece of software."/>
         </service>
+    
+        <!-- The Starling engine (26.3): its game activity runs in a process of its own. -->
+        <activity
+            android:name="io.github.juanluci.starling.LauncherActivity"
+            android:exported="false"
+            android:process=":starling_launcher"
+            android:taskAffinity="${applicationId}.starling_launcher"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name="io.github.juanluci.starling.GameActivity"
+            android:exported="false"
+            android:process=":starling"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:resizeableActivity="false"
+            android:theme="@style/Starling.Game"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation|density|screenSize|smallestScreenSize|layoutDirection|colorMode|fontWeightAdjustment|grammaticalGender">
+            <meta-data android:name="android.app.lib_name" android:value="horizon_android" />
+            <meta-data android:name="android.app.func_name" android:value="starling_on_create" />
+        </activity>
+        <activity
+            android:name="io.github.juanluci.starling.DiagnosticsActivity"
+            android:exported="false"
+            android:process=":starling_diagnostics"
+            android:theme="@style/Starling.Game"
+            android:hardwareAccelerated="false" />
+        <service
+            android:name="io.github.juanluci.starling.WorkService"
+            android:exported="false"
+            android:process=":starling"
+            android:foregroundServiceType="dataSync" />
     </application>
     <queries>
         <package android:name="net.kdt.pojavlaunch.ffmpeg"/>

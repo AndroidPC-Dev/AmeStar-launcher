@@ -9,6 +9,7 @@ import static net.kdt.pojavlaunch.Tools.runOnUiThread;
 import static net.kdt.pojavlaunch.Tools.shareLog;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -79,19 +80,7 @@ public class MainMenuFragment extends Fragment {
         mInstallJarButton.setOnClickListener(v -> mContentPicker.launch(new String[]{"*/*"}));
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
-        mPlayButton.setOnClickListener(v -> {
-            if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
-                AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
-                        .setTitle(R.string.sodium_warning_title)
-                        .setMessage(R.string.sodium_warning_message)
-                        .setNeutralButton(R.string.delete_sodium, (d,w)-> {
-                            Tools.deleteSodiumMods();
-                            ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-                        })
-                        .create();
-                sodiumWarningDialog.show();
-            } else ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-        });
+        mPlayButton.setOnClickListener(v -> startStarling());
 
         mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
 
@@ -124,6 +113,42 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
+    }
+
+    /**
+     * AmeStar plays Minecraft 26.3 with the Starling engine. It is told where the game files this
+     * launcher already holds are (so they are not downloaded again), and the engine starts in its
+     * own process, straight into the game or, the first time, its setup.
+     */
+    private void startStarling() {
+        Context context = requireContext();
+        try {
+            Class.forName("io.github.juanluci.starling.GameActivity");
+        } catch (ClassNotFoundException e) {
+            Toast.makeText(context, "This build has no Starling engine in it", Toast.LENGTH_LONG).show();
+            return;
+        }
+        File data = context.getFilesDir();
+        try {
+            File minecraft = new File(Tools.DIR_GAME_NEW);
+            if (!minecraft.isDirectory() && !minecraft.mkdirs()) throw new IOException("cannot create " + minecraft);
+            writeText(new File(data, "amestar-minecraft-root"), minecraft.getAbsolutePath());
+            // The engine starts the game, not its launcher, when this file is there
+            writeText(new File(data, "launcher-play"), "");
+        } catch (IOException e) {
+            Toast.makeText(context, "Could not prepare Starling: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent game = new Intent();
+        game.setClassName(context.getPackageName(), "io.github.juanluci.starling.GameActivity");
+        game.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(game);
+    }
+
+    private static void writeText(File file, String text) throws IOException {
+        try (OutputStream out = new FileOutputStream(file)) {
+            out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
     }
 
     /** Copies a picked .starling / .hmod / .zip file into the current profile's content folder. */

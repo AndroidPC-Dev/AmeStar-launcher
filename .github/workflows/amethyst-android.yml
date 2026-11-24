@@ -3,6 +3,10 @@ name: amethyst-android
 on:
   workflow_dispatch:
     inputs:
+      engine:
+        description: 'Put the Starling engine (Rust, 26.3) in the APK. Slow: about 20 minutes'
+        type: boolean
+        default: false
       light:
         description: 'Skip the Java runtime and LWJGL (much smaller APK, UI testing only; Java games cannot start)'
         type: boolean
@@ -20,6 +24,44 @@ jobs:
         working-directory: amethyst
     steps:
       - uses: actions/checkout@v4
+
+      - name: Engine - Python and Java 25 (the exporters)
+        if: ${{ inputs.engine }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Engine - Java 25
+        if: ${{ inputs.engine }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Engine - Android build-tools and NDK
+        if: ${{ inputs.engine }}
+        working-directory: .
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "build-tools;35.0.0" "platforms;android-36" "ndk;28.2.13676358" > /dev/null
+
+      - name: Engine - Rust and cargo-ndk
+        if: ${{ inputs.engine }}
+        working-directory: .
+        run: |
+          bash tools/ci/rustup_install.sh --profile minimal --component rust-src --target aarch64-linux-android
+          cargo install cargo-ndk --version 3.5.4 --locked
+
+      - name: Engine - Rust cache
+        if: ${{ inputs.engine }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: amestar-arm64-v8a
+
+      - name: Engine - build Starling and stage it into the app
+        if: ${{ inputs.engine }}
+        working-directory: .
+        run: python3 packaging/android/stage_gradle.py --profile quick
 
       - uses: actions/setup-java@v4
         with:

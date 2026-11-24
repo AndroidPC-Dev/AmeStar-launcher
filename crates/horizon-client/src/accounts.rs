@@ -31,8 +31,17 @@ pub fn dir() -> PathBuf {
 }
 
 /// Where the official files go, in the official launcher's layout (`versions/`, `libraries/`,
-/// `assets/`): the private folder, never shared storage.
+/// `assets/`): the private folder, or the one AmeStar's launcher names.
 pub fn files_root() -> PathBuf {
+    // AmeStar: the launcher part of the app names the folder of the game files it already
+    // downloaded (Amethyst's .minecraft) in this file, so nothing is downloaded twice.
+    let named = crate::logging::private_home().join("amestar-minecraft-root");
+    if let Ok(text) = std::fs::read_to_string(named) {
+        let dir = PathBuf::from(text.trim());
+        if !text.trim().is_empty() && dir.is_dir() {
+            return dir;
+        }
+    }
     crate::logging::private_home().join("minecraft")
 }
 
