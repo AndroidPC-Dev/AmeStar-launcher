@@ -61,10 +61,26 @@ jobs:
           gradle :app_pojavlauncher:assembleDebug --no-daemon
           mv app_pojavlauncher/build/outputs/apk/debug/app_pojavlauncher-debug.apk out/amestar-arm64-v8a.apk
 
+      - name: Slim the APK (light)
+        if: ${{ inputs.light }}
+        run: |
+          # Gradle regenerates the LWJGL files and bundles every CPU's natives; drop what only a
+          # Java game needs, then align and sign again with the same debug key (updates in place).
+          cd out
+          zip -qd amestar-arm64-v8a.apk 'assets/components/lwjgl*' 'assets/components/jre/*' \
+            'lib/arm64-v8a/libzink_dri.so' 'lib/arm64-v8a/libvulkan_freedreno.so' \
+            'lib/arm64-v8a/libGLESv2_angle.so' || true
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/zipalign" -f -p 4 amestar-arm64-v8a.apk aligned.apk
+          "$BT/apksigner" sign --ks ../app_pojavlauncher/debug.keystore --ks-pass pass:android \
+            --key-pass pass:android --ks-key-alias androiddebugkey --out amestar-arm64-v8a.apk aligned.apk
+          rm -f aligned.apk amestar-arm64-v8a.apk.idsig
+          "$BT/apksigner" verify amestar-arm64-v8a.apk
+
       - name: What is in the APK (largest first)
         run: |
           ls -l out
-          unzip -lv out/amestar-arm64-v8a.apk | sort -k1 -n -r | head -25
+          unzip -lv out/amestar-arm64-v8a.apk | sort -k1 -n -r | head -12
 
       - uses: actions/upload-artifact@v4
         with:
