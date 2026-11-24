@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       light:
-        description: 'Skip the bundled Java 8 runtime (much smaller APK, UI testing only; the game cannot start)'
+        description: 'Skip the Java runtime and LWJGL (much smaller APK, UI testing only; Java games cannot start)'
         type: boolean
         default: true
 
@@ -36,6 +36,14 @@ jobs:
           repo: AngelAuraMC/angelauramc-openjdk-build
           branch: buildjre8
           name: jre8-pojav
+
+      - name: Strip game-only files (light)
+        if: ${{ inputs.light }}
+        run: |
+          # The LWJGL jars (22 MB) and the Java runtime only matter once a Java game starts;
+          # the launcher logs and skips their unpacking when they are missing.
+          rm -rf app_pojavlauncher/src/main/assets/components/lwjgl3
+          rm -rf app_pojavlauncher/src/main/assets/components/jre
 
       - uses: gradle/actions/setup-gradle@v4
         with:
