@@ -1,5 +1,5 @@
 name: amestar-android
-# AmeStar's Android build: one APK, arm64-v8a (64-bit ARM), nothing else. Runs on every push to main and by hand
+# AmeStar's Android build: one APK, arm64-v8a (64-bit ARM), nothing else. Runs by hand only
 # from the Actions tab ("Run workflow"). The APK is kept as an artifact for 30 days.
 #
 # Signing: with the secret AMESTAR_KEYSTORE_BASE64 (a base64 of your .jks, plus AMESTAR_KEY_ALIAS,
@@ -7,8 +7,6 @@ name: amestar-android
 # the old one. Without it, build_apk.py signs with a throwaway key: it installs, but the next build must be
 # uninstalled first.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       profile:
