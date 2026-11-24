@@ -1249,10 +1249,12 @@ pub fn args() -> Vec<String> {
 /// The game's command line and environment: `--resources` in the game folder, then
 /// `horizon-args.txt` there (written over adb for tests), which may override it: one argument per
 /// line, or `NAME=value` for an environment variable (`HORIZON_GPU_CULL=0`, `WGPU_BACKEND=...`).
-fn command_line(home: &Path) -> (Vec<String>, Vec<(String, String)>) {
+fn command_line(home: &Path, game: &Path) -> (Vec<String>, Vec<(String, String)>) {
+    // AmeStar: the prepared game files sit in the game folder (shared storage when allowed), where
+    // they can be backed up, and found again after a reinstall.
     let mut args = vec![
         "--resources".to_owned(),
-        home.join("resources").display().to_string(),
+        game.join("resources").display().to_string(),
     ];
     let mut env = Vec::new();
     let text = std::fs::read_to_string(home.join("horizon-args.txt")).unwrap_or_default();
@@ -1582,7 +1584,7 @@ pub fn main(
     {
         hide_from_gallery(&home);
     }
-    let (args, env) = command_line(&private);
+    let (args, env) = command_line(&private, &folder);
     // SAFETY: no other thread of ours runs yet; the game reads these from its threads afterwards.
     unsafe {
         std::env::set_var("HORIZON_HOME", &home);
@@ -1731,7 +1733,7 @@ pub fn recovery_report(
     game: &Path,
     export: bool,
 ) -> Result<String, String> {
-    let (args, _) = command_line(private);
+    let (args, _) = command_line(private, game);
     let value = |flag: &str| {
         args.windows(2).find(|pair| pair[0] == flag).map(|pair| {
             let path = PathBuf::from(&pair[1]);
