@@ -61,6 +61,11 @@ jobs:
           gradle :app_pojavlauncher:assembleDebug --no-daemon
           mv app_pojavlauncher/build/outputs/apk/debug/app_pojavlauncher-debug.apk out/amestar-arm64-v8a.apk
 
+      - name: What is in the APK (largest first)
+        run: |
+          ls -l out
+          unzip -lv out/amestar-arm64-v8a.apk | sort -k1 -n -r | head -25
+
       - uses: actions/upload-artifact@v4
         with:
           name: amestar-arm64-v8a
