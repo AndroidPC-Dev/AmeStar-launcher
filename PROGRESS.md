@@ -1,8 +1,8 @@
 # AmeStar progress (branch dev)
 
-Last completed file: amethyst/.../StarlingSettingsFragment.java (settings file now AmeStar/Starling/starling-settings.json, read by the engine via crates/horizon-client-render/src/amestar_settings.rs)
+Last completed file: amethyst/.../MainMenuFragment.java (home: no wiki/discord/profile bar; engine: no in-game options menu; resources copy across filesystems)
 
-Next exact task: run workflow amestar-app on ref dev with light=false, engine=true (final full APK); read the log; fix any error; then check on phone: settings pages, controls editor, PLAY -> Starling.
+Next exact task: user runs amestar-app on dev (engine on, light off); check on phone: PLAY starts game after resources, settings pages, controls editor.
 
 Notes
 - App = Amethyst-Android (amethyst/) + Starling engine staged by packaging/android/stage_gradle.py. Package io.github.animexdevil.amestar, arm64 only.
