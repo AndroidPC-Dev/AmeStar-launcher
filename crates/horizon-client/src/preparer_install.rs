@@ -22,6 +22,35 @@ pub(super) fn reset_kit_sources(dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Rename, or copy then delete when the two folders are on different filesystems
+/// (private app storage to the shared AmeStar folder: os error 18).
+fn move_dir(from: &Path, to: &Path) -> std::io::Result<()> {
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    fn copy(from: &Path, to: &Path) -> std::io::Result<()> {
+        fs::create_dir_all(to)?;
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            let target = to.join(entry.file_name());
+            if entry.file_type()?.is_dir() {
+                copy(&entry.path(), &target)?;
+            } else {
+                fs::copy(entry.path(), &target)?;
+            }
+        }
+        Ok(())
+    }
+    if !from.is_dir() {
+        return fs::rename(from, to);
+    }
+    if let Err(error) = copy(from, to) {
+        let _ = fs::remove_dir_all(to);
+        return Err(error);
+    }
+    fs::remove_dir_all(from)
+}
+
 pub(super) fn activate(made: &Path, destination: &Path) -> Result<(), String> {
     if made == destination {
         return Ok(());
@@ -49,7 +78,7 @@ pub(super) fn activate(made: &Path, destination: &Path) -> Result<(), String> {
         fs::rename(destination, &backup)
             .map_err(|e| format!("Cannot preserve previous resources: {e}"))?;
     }
-    if let Err(error) = fs::rename(made, destination) {
+    if let Err(error) = move_dir(made, destination) {
         if previous && let Err(restore) = fs::rename(&backup, destination) {
             return Err(format!(
                 "Cannot activate resources: {error}; previous resources remain at {} (restore failed: {restore})",
