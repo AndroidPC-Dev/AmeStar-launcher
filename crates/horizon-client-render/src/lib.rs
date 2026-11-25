@@ -143,6 +143,7 @@ pub mod screen_effects;
 pub mod sculk;
 pub mod section_mask;
 pub mod server_terrain;
+pub mod amestar_settings;
 pub mod settings;
 pub mod settings_shell;
 pub mod shader_options;
