@@ -165,15 +165,10 @@ public final class Tools {
         return SDK_INT < 30 ? true : Environment.isExternalStorageManager();
     }
 
+    /** AmeStar keeps everything in the app's own Android/data folder, so one copy of it is a backup. */
     public static File getPojavStorageRoot(Context ctx) {
-        if(SDK_INT >= 30 && Environment.isExternalStorageManager()) {
-            return getSharedRoot();
-        }
-        if(SDK_INT >= 29) {
-            return ctx.getExternalFilesDir(null);
-        }else{
-            return getSharedRoot();
-        }
+        File own = ctx.getExternalFilesDir(null);
+        return own != null ? own : getSharedRoot();
     }
 
     /**
