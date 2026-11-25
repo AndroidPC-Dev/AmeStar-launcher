@@ -165,7 +165,6 @@ impl Game<'_> {
     }
     fn mobile_click_feedback(&mut self) {
         if std::mem::take(&mut self.mobile.controls.clicked) {
-            self.audio.play_button_click();
             self.android_touch_haptic(10);
         }
     }
@@ -504,7 +503,6 @@ impl Game<'_> {
         {
             self.mobile.controls.inventory_shift ^= true;
             self.mobile.controls.ignore(t.id);
-            self.audio.play_button_click();
             self.android_touch_haptic(10);
             return;
         }
@@ -1409,7 +1407,6 @@ impl Game<'_> {
             let did = !matches!(menu_act, InGameMenuAction::Close)
                 || self.mobile.ui.hub_state() != hub_before;
             if t.phase == TouchPhase::Started && did {
-                self.audio.play_button_click();
                 self.android_touch_haptic(12);
             }
             match menu_act {
