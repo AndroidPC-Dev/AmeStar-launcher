@@ -204,7 +204,7 @@ public class StarlingSettingsFragment extends LauncherPreferenceFragment {
             for (Map.Entry<String, ?> e : prefs.getAll().entrySet()) {
                 if (e.getKey().startsWith(PREF_PREFIX)) out.put(e.getKey().substring(PREF_PREFIX.length()), e.getValue());
             }
-            File file = new File(Tools.DIR_GAME_HOME, SETTINGS_FILE);
+            File file = new File(Tools.DIR_GAME_HOME + "/Starling", SETTINGS_FILE);
             File dir = file.getParentFile();
             if (dir != null) dir.mkdirs();
             try (FileOutputStream fos = new FileOutputStream(file)) {

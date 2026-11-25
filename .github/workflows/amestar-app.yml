@@ -1,4 +1,4 @@
-name: amethyst-android
+name: amestar-app
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
         default: true
 
 concurrency:
-  group: amethyst-android-${{ github.ref }}
+  group: amestar-app-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

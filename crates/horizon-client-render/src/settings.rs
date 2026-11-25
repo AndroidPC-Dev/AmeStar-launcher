@@ -403,6 +403,12 @@ impl Settings {
         horizon_hooks::settings::engine::load(&mut |file| fs::read_to_string(dir?.join(file)).ok());
     }
     pub fn load(path: &Path) -> Self {
+        let mut settings = Self::load_options(path);
+        crate::amestar_settings::apply_file(&mut settings);
+        settings
+    }
+
+    fn load_options(path: &Path) -> Self {
         let mut horizon = path
             .parent()
             .map(crate::graphics::Graphics::load)
