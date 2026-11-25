@@ -91,10 +91,6 @@ public class MainMenuFragment extends Fragment {
 
         });
 
-
-            Tools.swapFragment(requireActivity(), GamepadMapperFragment.class, GamepadMapperFragment.TAG, null);
-            return true;
-        });
     }
 
     private File getCurrentProfileDirectory() {
