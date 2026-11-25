@@ -92,10 +92,10 @@ impl Control {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ControlStyle {
-    /// Classic Bedrock look: every built-in control in the MCPE style.
-    #[default]
+    /// Classic Bedrock look: every built-in control in the MCPE style. AmeStar does not offer it.
     Mcpe,
     /// GoyControl style (customizable static buttons, custom joystick, up to 3 events, no icons).
+    #[default]
     GoyControl,
 }
 impl ControlStyle {
@@ -120,7 +120,7 @@ impl ControlStyle {
     pub fn storage_subdir(self) -> &'static str {
         match self {
             Self::Mcpe => "controls/mcpe",
-            Self::GoyControl => "controls/goycontrol",
+            Self::GoyControl => "controls",
         }
     }
 }
@@ -782,6 +782,8 @@ impl Settings {
             .ok()
             .and_then(|b| serde_json::from_slice(&b).ok())
             .unwrap_or_default();
+        // AmeStar keeps GoyControl only.
+        s.control_style = ControlStyle::GoyControl;
         s.sanitize();
         if s.control_style == ControlStyle::GoyControl && s.custom_buttons.is_empty() {
             s.custom_buttons = Self::default_goy_buttons();
