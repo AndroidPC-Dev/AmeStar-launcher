@@ -21,6 +21,10 @@ static ARGS: OnceLock<Vec<String>> = OnceLock::new();
 /// Shared storage's Starling folder, when the player allowed the app to use it.
 static SHARED_FOLDER: OnceLock<PathBuf> = OnceLock::new();
 
+/// The prepared game files: the app's folder under Android/data (reachable with Shizuku, and no
+/// slow copy through shared storage), else the game folder's `resources`.
+static RESOURCES_DIR: OnceLock<PathBuf> = OnceLock::new();
+
 /// `StarlingActivity.onStorage`, called on the UI thread before the game's thread starts.
 pub fn set_shared_folder(folder: PathBuf) {
     let _ = SHARED_FOLDER.set(folder);
@@ -1254,7 +1258,12 @@ fn command_line(home: &Path, game: &Path) -> (Vec<String>, Vec<(String, String)>
     // they can be backed up, and found again after a reinstall.
     let mut args = vec![
         "--resources".to_owned(),
-        game.join("resources").display().to_string(),
+        RESOURCES_DIR
+            .get()
+            .cloned()
+            .unwrap_or_else(|| game.join("resources"))
+            .display()
+            .to_string(),
     ];
     let mut env = Vec::new();
     let text = std::fs::read_to_string(home.join("horizon-args.txt")).unwrap_or_default();
@@ -1567,6 +1576,12 @@ pub fn main(
     let _ = std::fs::create_dir_all(&private);
     let mut notes = Vec::new();
     let folder = game_folder(&private, &mut notes);
+    if let Some(external) = app.external_data_path() {
+        let resources = external.join("resources");
+        if std::fs::create_dir_all(&resources).is_ok() {
+            let _ = RESOURCES_DIR.set(resources);
+        }
+    }
     // Horizon Android's launcher, or the game in the instance it chose: one of them a process.
     let chosen = crate::ha_launcher::start(&private, &folder);
     let home = match &chosen {
