@@ -214,12 +214,6 @@ impl Game<'_> {
         self.open_options_at(from_title, Page::Main);
     }
     pub(super) fn open_options_at(&mut self, from_title: bool, page: Page) {
-        // On Android the settings live in the launcher; the in-game options
-        // menu is not offered.
-        #[cfg(target_os = "android")]
-        if page == Page::Main {
-            return;
-        }
         #[cfg(target_os = "android")]
         self.mobile_options_open();
         // Gameplay keys must not stay held behind the options screen, where
