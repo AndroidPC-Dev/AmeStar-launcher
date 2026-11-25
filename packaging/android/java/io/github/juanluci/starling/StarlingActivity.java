@@ -164,16 +164,9 @@ public class StarlingActivity extends NativeActivity {
      *  StarlingDev for Starling Dev (build_apk.py --dev) and StarlingPreview for Starling Preview
      *  (--preview), which keep out of the release's. */
     static String sharedFolder(Context context) {
-        boolean allowed = Build.VERSION.SDK_INT >= 30
-                ? Environment.isExternalStorageManager()
-                : context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        == PackageManager.PERMISSION_GRANTED;
-        String id = context.getPackageName();
-        // AmeStar: inside the app's own folder in shared storage, beside Amethyst's .minecraft.
-        String name = "AmeStar/Starling";
-        return allowed
-                ? new File(Environment.getExternalStorageDirectory(), name).getPath()
-                : null;
+        // AmeStar: the app's own Android/data folder, beside .minecraft (the official files).
+        File own = context.getExternalFilesDir(null);
+        return own == null ? null : new File(own, "Starling").getPath();
     }
 
     public void openDiagnostics() {
