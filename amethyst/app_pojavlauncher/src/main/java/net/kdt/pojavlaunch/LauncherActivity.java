@@ -353,37 +353,11 @@ public class LauncherActivity extends BaseActivity {
 
     private boolean mAskedAllFiles;
 
-    /**
-     * AmeStar keeps its files in /storage/emulated/0/AmeStar so they can be moved in and out.
-     * That needs the all-files permission: ask once, and move over to the folder when it is given.
-     */
-    private void useSharedFolder() {
-        if (Build.VERSION.SDK_INT < 30) return;
-        if (!Tools.hasAllFilesAccess()) {
-            if (mAskedAllFiles) return;
-            mAskedAllFiles = true;
-            Toast.makeText(this, "Allow access to all files so AmeStar can keep its files in the AmeStar folder", Toast.LENGTH_LONG).show();
-            try {
-                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        android.net.Uri.parse("package:" + getPackageName())));
-            } catch (Exception e) {
-                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
-            }
-            return;
-        }
-        if (!Tools.getSharedRoot().getAbsolutePath().equals(Tools.DIR_GAME_HOME)) {
-            Tools.initStorageConstants(this);
-            AsyncAssetManager.unpackSingleFiles(this);
-            AsyncAssetManager.unpackComponents(this);
-        }
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
         ContextExecutor.setActivity(this);
         mInstallTracker.attach();
-        useSharedFolder();
     }
 
     @Override
