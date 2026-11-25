@@ -178,7 +178,12 @@ fn run(resources: &Path, started: Instant) -> Result<(), String> {
             missing.join("; ")
         ));
     }
+    *shared() = Stage::Preparing(
+        "Moving the prepared game into the AmeStar folder. This can take several minutes.".into(),
+    );
+    log::info!("Horizon: preparing: moving the prepared game to {}", resources.display());
     install::activate(&made, resources)?;
+    log::info!("Horizon: preparing: the prepared game is in place");
     // Bedrock's touch buttons, from Mojang too, so the first game already has them.
     crate::bedrock_touch::fetch_logged(resources);
     // Preparation replaces the resource directory. Fetch the original control
@@ -226,6 +231,11 @@ pub fn complete_sounds(resources: &Path) {
 /// from go (accounts::drop_files), on a thread of their own: thousands of files to delete. Not
 /// while the resources lack their sounds, which `complete_sounds` still takes from them.
 pub fn drop_downloads(resources: &Path) {
+    // AmeStar keeps the official files: the player copies them to other launchers and
+    // re-prepares from them without downloading again.
+    if cfg!(target_os = "android") {
+        return;
+    }
     let root = crate::accounts::files_root();
     if !crate::platform::registered()
         || !resources.join("assets/minecraft/sounds.json").is_file()
