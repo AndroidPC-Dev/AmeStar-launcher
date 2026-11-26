@@ -2544,14 +2544,6 @@ impl TouchUi {
                 let act_y = body_y + 342.0;
                 let half_w = (cw - 10.0) * 0.5;
                 if inside([cx, act_y, half_w, 44.0]) {
-                    let next_style = if settings.control_style == ControlStyle::Mcpe {
-                        ControlStyle::GoyControl
-                    } else {
-                        ControlStyle::Mcpe
-                    };
-                    return Some(InGameMenuAction::SetControlStyle(next_style));
-                }
-                if inside([cx + half_w + 10.0, act_y, half_w, 44.0]) {
                     self.floating_menu = false;
                     return Some(InGameMenuAction::OpenControlEditor);
                 }
@@ -2565,14 +2557,7 @@ impl TouchUi {
             }
             1 => {
                 // Tab 1: Controls
-                let mode_y = body_y + 18.0;
                 let half_w = (cw - 10.0) * 0.5;
-                if inside([cx, mode_y, half_w, 46.0]) {
-                    return Some(InGameMenuAction::SetControlStyle(ControlStyle::Mcpe));
-                }
-                if inside([cx + half_w + 10.0, mode_y, half_w, 46.0]) {
-                    return Some(InGameMenuAction::SetControlStyle(ControlStyle::GoyControl));
-                }
 
                 // Customize Controls | Control Presets
                 let act_y = body_y + 84.0;
@@ -3188,15 +3173,11 @@ impl TouchUi {
 
                 let act_y = body_y + 342.0;
                 let half_w = (cw - 10.0) * 0.5;
-                let sys_sub = format!("Active: {}", settings.control_style.label());
-                for (i, (ic, title, sub)) in [
-                    (Icon::Gamepad, "Switch Control System", sys_sub.as_str()),
-                    (
-                        Icon::MicrosoftGrid,
-                        "Customize Controls",
-                        "Open layout & property studio",
-                    ),
-                ]
+                for (i, (ic, title, sub)) in [(
+                    Icon::MicrosoftGrid,
+                    "Customize Controls",
+                    "Open layout & property studio",
+                )]
                 .into_iter()
                 .enumerate()
                 {
@@ -3227,54 +3208,6 @@ impl TouchUi {
                 );
             }
             1 => {
-                // 1. Control Mode Section
-                ui.text(Face::SemiBold, 10.2, cx, body_y, muted_c, "CONTROL MODE");
-                let mode_y = body_y + 18.0;
-                let half_w = (cw - 10.0) * 0.5;
-                let is_mcpe = settings.control_style == ControlStyle::Mcpe;
-                for (i, (title, sub, sel)) in [
-                    ("MCPE (Default)", "Vanilla touch controls", is_mcpe),
-                    ("GoyControl", "Custom layout & keybinds", !is_mcpe),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    let rx = cx + i as f32 * (half_w + 10.0);
-                    ui.rounded(
-                        rx,
-                        mode_y,
-                        half_w,
-                        46.0,
-                        11.0,
-                        if sel { card_sel } else { card_bg },
-                    );
-                    ui.stroke_rounded(
-                        rx,
-                        mode_y,
-                        half_w,
-                        46.0,
-                        11.0,
-                        if sel { 1.6 } else { 1.0 },
-                        if sel { accent } else { border_c },
-                    );
-                    let rad_x = rx + 11.0;
-                    let rad_y = mode_y + 16.0;
-                    ui.stroke_rounded(
-                        rad_x,
-                        rad_y,
-                        14.0,
-                        14.0,
-                        7.0,
-                        1.5,
-                        if sel { accent_hi } else { muted_c },
-                    );
-                    if sel {
-                        ui.rounded(rad_x + 3.5, rad_y + 3.5, 7.0, 7.0, 3.5, accent_hi);
-                    }
-                    ui.text(Face::SemiBold, 11.0, rx + 31.0, mode_y + 7.0, text_c, title);
-                    ui.text(Face::Regular, 9.0, rx + 31.0, mode_y + 25.0, muted_c, sub);
-                }
-
                 // 2. Dynamic System Controls Section
                 ui.text(
                     Face::SemiBold,
