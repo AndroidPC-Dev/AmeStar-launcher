@@ -221,8 +221,55 @@ impl Game<'_> {
         self.mobile.controls.open_editor();
         self.capture(false);
     }
+    /// AmeStar: the layout Amethyst's editor saved (`controlmap/default.json`, beside the
+    /// Starling folder) is the one played: loaded when it is newer than the one last loaded.
+    fn android_amethyst_controls(&mut self) {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static FRAMES: AtomicU64 = AtomicU64::new(0);
+        static SEEN: AtomicU64 = AtomicU64::new(0);
+        if FRAMES.fetch_add(1, Ordering::Relaxed) % 30 != 0 {
+            return;
+        }
+        let Some(root) = std::env::var_os("AMESTAR_ROOT") else {
+            return;
+        };
+        let file = std::path::Path::new(&root).join("../controlmap/default.json");
+        let Some(stamp) = std::fs::metadata(&file)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+        else {
+            return;
+        };
+        if stamp == SEEN.load(Ordering::Relaxed) {
+            return;
+        }
+        SEEN.store(stamp, Ordering::Relaxed);
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            return;
+        };
+        let aspect = self
+            .window
+            .as_ref()
+            .map(|w| {
+                let s = w.inner_size();
+                s.width as f32 / s.height.max(1) as f32
+            })
+            .unwrap_or(horizon_client::android_controls::pojav::DEFAULT_ASPECT);
+        match horizon_client::android_controls::pojav::convert(&text, aspect) {
+            Ok(layout) => {
+                self.android_release_touch_keys(true);
+                self.mobile.controls.settings.apply_amethyst_layout(layout);
+                let _ = self.mobile.controls.settings.save();
+                self.settings.touch = self.mobile.controls.settings.clone();
+            }
+            Err(e) => log::warn!("Horizon: the Amethyst layout was not used: {e}"),
+        }
+    }
     pub(in crate::game) fn mobile_frame(&mut self, events: &dyn super::event_loop::EventLoopCtl) {
         self.mobile_init();
+        self.android_amethyst_controls();
         self.mobile.ui.hub_visible = self.mobile.controls.settings.show_control_hub;
         self.mobile.ui.pause_in_background = self.settings.file.bool("pauseOnLostFocus");
         self.mobile.ui.utility_offset_y = if self.screen == Screen::Playing
@@ -1412,8 +1459,8 @@ impl Game<'_> {
             match menu_act {
                 InGameMenuAction::Close => {}
                 InGameMenuAction::OpenControlEditor => {
-                    self.mobile.controls.open_editor();
-                    self.android_sync_pointer();
+                    // AmeStar: Amethyst's own editor, in its own screen.
+                    horizon_client::android::open_control_editor();
                 }
                 InGameMenuAction::SetControlStyle(style) => {
                     self.android_release_touch_keys(true);
