@@ -1,8 +1,8 @@
 # AmeStar progress (branch dev)
 
-Last completed file: mobile_controls/mod.rs (in-game Customize Controls opens Amethyst's CustomControlsActivity; game loads controlmap/default.json)
+Last completed file: touch/mod.rs (chat opens Starling OSK instantly; drawers, clear buttons added)
 
-Next exact task: user tests; watch CustomControlsActivity start from the game process, layout import (pojav.rs), then trim Starling menus.
+Next exact task: user tests drawers/OSK/transparent buttons on device; then caret tap in chat, trim Starling menus. Watch CustomControlsActivity start from the game process, layout import (pojav.rs), then trim Starling menus.
 
 Notes
 - App = Amethyst-Android (amethyst/) + Starling engine staged by packaging/android/stage_gradle.py. Package io.github.animexdevil.amestar, arm64 only.
