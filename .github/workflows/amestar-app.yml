@@ -71,7 +71,7 @@ jobs:
       - name: No engine - the game theme the manifest names
         if: ${{ !inputs.engine }}
         run: |
-          cat > amethyst/app_pojavlauncher/src/main/res/values/starling_stub.xml <<'XML'
+          cat > app_pojavlauncher/src/main/res/values/starling_stub.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <style name="Starling.Game" parent="android:Theme.Material.NoActionBar"/>
