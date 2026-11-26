@@ -169,6 +169,20 @@ public class StarlingActivity extends NativeActivity {
         return own == null ? null : new File(own, "Starling").getPath();
     }
 
+    /** AmeStar: Amethyst's controls editor, a screen of the launcher in this same app. */
+    public void openControlEditor() {
+        runOnUiThread(new Runnable() {
+            @Override public void run() {
+                try {
+                    Intent edit = new Intent().setClassName(getPackageName(), "net.kdt.pojavlaunch.CustomControlsActivity");
+                    startActivity(edit);
+                } catch (RuntimeException e) {
+                    android.util.Log.w("AmeStar", "no controls editor: " + e);
+                }
+            }
+        });
+    }
+
     public void openDiagnostics() {
         runOnUiThread(new Runnable() {
             @Override public void run() { startActivity(new Intent(StarlingActivity.this, DiagnosticsActivity.class)); }
