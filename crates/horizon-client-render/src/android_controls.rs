@@ -207,6 +207,8 @@ pub struct TouchControls {
     fingers: BTreeMap<u64, (Role, [f32; 2])>,
     passthrough_fingers: BTreeSet<u64>,
     custom_fingers: BTreeMap<u64, String>,
+    /// Which drawers are open (bit per drawer id).
+    pub open_drawers: u32,
     latched_custom: BTreeSet<String>,
     latched_controls: u16,
     custom_events: Vec<(String, bool)>,
@@ -259,6 +261,7 @@ impl Default for TouchControls {
             fingers: BTreeMap::new(),
             passthrough_fingers: BTreeSet::new(),
             custom_fingers: BTreeMap::new(),
+            open_drawers: 0,
             latched_custom: BTreeSet::new(),
             latched_controls: 0,
             custom_events: Vec::new(),
