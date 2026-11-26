@@ -1,8 +1,8 @@
 # AmeStar progress (branch dev)
 
-Last completed file: StarlingActivity.java (all data in Android/data/io.github.animexdevil.amestar/files: .minecraft = official files, resources = prepared, Starling = saves+settings)
+Last completed file: mobile_controls/mod.rs (in-game Customize Controls opens Amethyst's CustomControlsActivity; game loads controlmap/default.json)
 
-Next exact task: user builds amestar-app (engine on, light off) and tests PLAY; fix whatever the log shows.
+Next exact task: user tests; watch CustomControlsActivity start from the game process, layout import (pojav.rs), then trim Starling menus.
 
 Notes
 - App = Amethyst-Android (amethyst/) + Starling engine staged by packaging/android/stage_gradle.py. Package io.github.animexdevil.amestar, arm64 only.
