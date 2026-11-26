@@ -177,6 +177,15 @@ const SYMBOLS_LINES: [Row; 5] = [SYMBOLS[0], SYMBOLS[1], SYMBOLS[2], SYMBOLS[3],
 /// The panel's padding around the keys and the hints, the gap between them, and a hint line's
 /// height in its text size, all in dp (a line box is 1.45 sizes; the pack's font can be a
 /// little taller).
+#[cfg(target_os = "android")]
+const UNIT: f32 = 62.0;
+#[cfg(not(target_os = "android"))]
+const UNIT: f32 = 50.0;
+const GAP: f32 = 6.0;
+#[cfg(target_os = "android")]
+const KEY_H: f32 = 50.0;
+#[cfg(not(target_os = "android"))]
+const KEY_H: f32 = 38.0;
 const PANEL_PAD: f32 = 12.0;
 const HINT_GAP: f32 = 8.0;
 const HINT_LINE: f32 = 1.6;
@@ -435,18 +444,82 @@ impl Keyboard {
 
     /// Draw the keyboard across the bottom of the screen, or the top when
     /// the field it types into is in the lower half.
-    pub fn draw(&self, ui: &mut Ui, at_top: bool, glyphs: Glyphs) {
-        const UNIT: f32 = 50.0;
-        const GAP: f32 = 6.0;
-        const KEY_H: f32 = 38.0;
-        const LABEL_PAD: f32 = 4.0;
+    /// The panel's frame: left, top, width of the keys and the keys' height, for a screen of
+    /// `w` by `h` dp and `hint_h` of hint lines below the keys.
+    fn frame(w: f32, h: f32, at_top: bool, hint_h: f32) -> (f32, f32, f32, f32) {
         let width = 10.0 * UNIT + 9.0 * GAP;
-        let hints = self.hint_lines(ui, glyphs, width);
-        let line_h = HINT_LINE * ui_theme::small();
         let keys_h = 5.0 * KEY_H + 4.0 * GAP;
-        let height = PANEL_PAD + keys_h + HINT_GAP + hints.len() as f32 * line_h + PANEL_PAD;
-        let x0 = ((ui.w - width) / 2.0).round();
-        let y0 = if at_top { 16.0 } else { ui.h - height - 16.0 };
+        let gap = if hint_h > 0.0 { HINT_GAP } else { 0.0 };
+        let height = PANEL_PAD + keys_h + gap + hint_h + PANEL_PAD;
+        // On a phone the keyboard sits at the right, below the chat bar.
+        #[cfg(target_os = "android")]
+        let x0 = (w - width - PANEL_PAD - 12.0).round();
+        #[cfg(not(target_os = "android"))]
+        let x0 = ((w - width) / 2.0).round();
+        #[cfg(target_os = "android")]
+        let y0 = if at_top { 56.0 } else { h - height - 16.0 };
+        #[cfg(not(target_os = "android"))]
+        let y0 = if at_top { 16.0 } else { h - height - 16.0 };
+        (x0, y0, width, keys_h)
+    }
+
+    /// The key under the cursor (row, column), or `None` outside the keys.
+    pub fn key_under(&self, ui: &Ui, at_top: bool) -> Option<(usize, usize)> {
+        let (x0, y0, ..) = Self::frame(ui.w, ui.h, at_top, 0.0);
+        let (cx, cy) = ui.cursor;
+        for (r, row) in self.rows().iter().enumerate() {
+            let y = y0 + r as f32 * (KEY_H + GAP);
+            if cy < y || cy >= y + KEY_H {
+                continue;
+            }
+            for (i, (_, units)) in row.iter().enumerate() {
+                let (left, _) = Self::span(row, i);
+                let x = x0 + left * (UNIT + GAP);
+                let w = units * UNIT + (units - 1.0) * GAP;
+                if cx >= x && cx < x + w {
+                    return Some((r, i));
+                }
+            }
+        }
+        None
+    }
+
+    /// Whether the cursor is on the panel (keys and the margin around them).
+    pub fn panel_under(&self, ui: &Ui, at_top: bool) -> bool {
+        let (x0, y0, width, keys_h) = Self::frame(ui.w, ui.h, at_top, 0.0);
+        let (cx, cy) = ui.cursor;
+        cx >= x0 - PANEL_PAD
+            && cx < x0 + width + PANEL_PAD
+            && cy >= y0 - PANEL_PAD
+            && cy < y0 + keys_h + PANEL_PAD
+    }
+
+    /// A tap on the key at `row`, `column`.
+    pub fn tap(&mut self, row: usize, col: usize) -> Option<Output> {
+        self.row = row;
+        self.col = col;
+        self.press()
+    }
+
+    pub fn draw(&self, ui: &mut Ui, at_top: bool, glyphs: Glyphs) {
+        const LABEL_PAD: f32 = 4.0;
+        // A phone has no pad to name: no hint lines.
+        #[cfg(target_os = "android")]
+        let hints: Vec<String> = Vec::new();
+        #[cfg(not(target_os = "android"))]
+        let width_for_hints = 10.0 * UNIT + 9.0 * GAP;
+        #[cfg(not(target_os = "android"))]
+        let hints = self.hint_lines(ui, glyphs, width_for_hints);
+        #[cfg(target_os = "android")]
+        let _ = glyphs;
+        let line_h = HINT_LINE * ui_theme::small();
+        let (x0, y0, width, keys_h) =
+            Self::frame(ui.w, ui.h, at_top, hints.len() as f32 * line_h);
+        let height = PANEL_PAD
+            + keys_h
+            + if hints.is_empty() { 0.0 } else { HINT_GAP }
+            + hints.len() as f32 * line_h
+            + PANEL_PAD;
         ui.rounded(
             x0 - PANEL_PAD,
             y0 - PANEL_PAD,
