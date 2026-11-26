@@ -3218,6 +3218,7 @@ impl TouchUi {
                     settings.control_style.section_title(),
                 );
                 let act_y = body_y + 84.0;
+                let half_w = (cw - 10.0) * 0.5;
                 let active_preset_lbl = format!("Preset: {}", settings.preset_name);
                 for (i, (ic, title, sub)) in [
                     (
