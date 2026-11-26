@@ -65,7 +65,6 @@ public class MainMenuFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
         Button mInstallJarButton = view.findViewById(R.id.install_jar_button);
         Button mShareLogsButton = view.findViewById(R.id.share_logs_button);
         Button mOpenDirectoryButton = view.findViewById(R.id.open_files_button);
@@ -73,7 +72,6 @@ public class MainMenuFragment extends Fragment {
         Button mPlayButton = view.findViewById(R.id.play_button);
         mVersionSpinner = view.findViewById(R.id.mc_version_spinner);
 
-        mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
         // AmeStar: Amethyst's "Execute a .jar" row installs Starling content instead
         mInstallJarButton.setText("Install .starling / .hmod file");
         mInstallJarButton.setOnClickListener(v -> mContentPicker.launch(new String[]{"*/*"}));
@@ -122,6 +120,11 @@ public class MainMenuFragment extends Fragment {
             return;
         }
         final File minecraft = new File(Tools.DIR_GAME_NEW);
+        // The game files are already here: start at once, without looking in other launchers.
+        if (new File(minecraft, "versions/" + STARLING_VERSION + "/" + STARLING_VERSION + ".jar").isFile()) {
+            launchStarling(context, minecraft);
+            return;
+        }
         // First take what another launcher on the phone (Amethyst, Pojav, Mojo...) already has of 26.3
         final AlertDialog looking = new AlertDialog.Builder(context)
                 .setTitle("AmeStar")
