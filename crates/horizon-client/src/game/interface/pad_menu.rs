@@ -2411,7 +2411,7 @@ impl Game<'_> {
     /// Open the on-screen keyboard over the focused field: Horizon's, or
     /// Steam's on a Steam Deck (`steam://open/keyboard`, which types into
     /// the window like a real keyboard).
-    fn pad_open_keyboard(&mut self) {
+    pub(in crate::game) fn pad_open_keyboard(&mut self) {
         // Without xdg-open (macOS, Windows), Horizon's keyboard instead.
         if gamepad::steam_keyboard(self.settings.controller.keyboard)
             && std::process::Command::new("xdg-open")
@@ -2446,6 +2446,43 @@ impl Game<'_> {
             self.pad.menu.osk_dismissed = true;
             self.pad_open_keyboard();
         }
+    }
+
+    /// Whether the on-screen keyboard is up.
+    pub(in crate::game) fn osk_is_open(&self) -> bool {
+        self.pad.menu.osk.is_some()
+    }
+
+    /// A finger on the on-screen keyboard (`p` in window pixels): true when it is on the
+    /// panel, so the game under it gets nothing. A key types when the finger lifts.
+    pub(in crate::game) fn osk_touch(&mut self, p: [f32; 2], lifted: bool) -> bool {
+        if self.pad.menu.osk.is_none() {
+            return false;
+        }
+        let mut batch = self.interface_batch(self.touch_size());
+        let at_top = self.screen == Screen::Chat
+            || self
+                .pad
+                .menu
+                .focus
+                .is_some_and(|f| f.center().1 > batch.height / 2.0);
+        let gui = self.interface_point(p, batch.scale);
+        let ui = horizon_client::ui_theme::Ui::new(&self.gui.atlas, &mut batch, gui);
+        let Some(keyboard) = self.pad.menu.osk.as_ref() else {
+            return false;
+        };
+        let on_panel = keyboard.panel_under(&ui, at_top);
+        let key = keyboard.key_under(&ui, at_top);
+        drop(ui);
+        if on_panel && lifted {
+            if let Some((row, col)) = key
+                && let Some(keyboard) = self.pad.menu.osk.as_mut()
+                && let Some(out) = keyboard.tap(row, col)
+            {
+                self.pad_osk_output(out);
+            }
+        }
+        on_panel
     }
 
     /// What a key of the on-screen keyboard does: the same as a typed key in
