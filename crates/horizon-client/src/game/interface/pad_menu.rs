@@ -2448,6 +2448,19 @@ impl Game<'_> {
         }
     }
 
+    /// The chat opens with the keyboard on a phone and keeps it: a tap elsewhere does not put it
+    /// away. Opened once per chat; the keyboard's own Close key puts it away for that chat.
+    pub(in crate::game) fn osk_with_chat(&mut self) {
+        let chat = self.screen == Screen::Chat && self.title.is_none() && !self.dialog_open();
+        if !chat {
+            return;
+        }
+        if self.pad.menu.osk.is_none() && !self.pad.menu.osk_dismissed {
+            self.pad.menu.osk_dismissed = true;
+            self.pad_open_keyboard();
+        }
+    }
+
     /// Whether the on-screen keyboard is up.
     pub(in crate::game) fn osk_is_open(&self) -> bool {
         self.pad.menu.osk.is_some()
