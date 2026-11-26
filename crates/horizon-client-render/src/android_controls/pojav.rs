@@ -24,6 +24,8 @@ struct RawLayout {
     buttons: Vec<RawButton>,
     #[serde(rename = "mJoystickDataList")]
     joysticks: Vec<RawJoystick>,
+    #[serde(rename = "mDrawerDataList")]
+    drawers: Vec<RawDrawer>,
     #[serde(rename = "scaledAt")]
     scaled_at: Option<f64>,
 }
@@ -58,6 +60,17 @@ struct RawButton {
     in_game: bool,
     #[serde(rename = "displayInMenu")]
     in_menu: bool,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+struct RawDrawer {
+    properties: RawButton,
+    #[serde(rename = "buttonProperties")]
+    button_properties: Vec<RawButton>,
+    orientation: String,
+    #[serde(rename = "startingVisible")]
+    starting_visible: bool,
 }
 
 #[derive(Deserialize, Default)]
@@ -310,6 +323,50 @@ fn argb(v: i64) -> u32 {
     v as i32 as u32
 }
 
+/// One Amethyst button as a GoyControl button.
+fn make_button(
+    b: &RawButton,
+    first: &str,
+    tokens: &[String],
+    at: &Boxed,
+    screen: [f64; 2],
+    index: usize,
+) -> CustomButton {
+    let mut button = CustomButton::new(first.to_owned(), index);
+    button.second_key = tokens.get(1).cloned().unwrap_or_default();
+    button.third_key = tokens.get(2).cloned().unwrap_or_default();
+    button.custom_label = b.name.trim().to_owned();
+    let mut p = Placement::new(
+        ((at.x + at.w / 2.0) / screen[0]) as f32,
+        ((at.y + at.h / 2.0) / screen[1]) as f32,
+        (at.h / screen[1]) as f32,
+    );
+    p.width_ratio = (at.w / at.h) as f32;
+    p.opacity = b.opacity.unwrap_or(1.0).clamp(0.0, 1.0);
+    p.toggleable = b.toggle;
+    p.swipeable = b.swipeable;
+    p.passthrough = b.pass_through;
+    p.use_goy_style = true;
+    p.shape = u8::from(b.corner_radius < 1.0);
+    p.roundness = b.corner_radius.clamp(0.0, 50.0);
+    p.stroke_roundness = p.roundness;
+    p.stroke_size = b.stroke_width.clamp(0.0, 8.0);
+    p.stroke_color = argb(b.stroke_color);
+    p.button_color = argb(b.bg_color);
+    // A fully clear button stays clear when pressed or switched on (Amethyst has no second
+    // colour): the background's alpha picks it.
+    if p.button_color >> 24 == 0 {
+        p.on_click_color = p.button_color;
+        p.on_toggle_color = p.button_color;
+        p.on_click_stroke_color = p.stroke_color;
+        p.on_toggle_stroke_color = p.stroke_color;
+    }
+    p.visible_in_game = b.in_game;
+    p.visible_in_menu = b.in_menu;
+    button.layouts = [p; 3];
+    button
+}
+
 /// Reads an Amethyst layout. `aspect` is the screen's width over its height.
 pub fn convert(json: &str, aspect: f32) -> Result<Imported, String> {
     let raw: RawLayout = serde_json::from_str(json).map_err(|e| e.to_string())?;
@@ -343,31 +400,66 @@ pub fn convert(json: &str, aspect: f32) -> Result<Imported, String> {
             skipped += 1;
             continue;
         }
-        let mut button = CustomButton::new(first.clone(), buttons.len());
-        button.second_key = tokens.get(1).cloned().unwrap_or_default();
-        button.third_key = tokens.get(2).cloned().unwrap_or_default();
-        button.custom_label = b.name.trim().to_owned();
-        let mut p = Placement::new(
-            ((at.x + at.w / 2.0) / screen[0]) as f32,
-            ((at.y + at.h / 2.0) / screen[1]) as f32,
-            (at.h / screen[1]) as f32,
-        );
-        p.width_ratio = (at.w / at.h) as f32;
-        p.opacity = b.opacity.unwrap_or(1.0).clamp(0.0, 1.0);
-        p.toggleable = b.toggle;
-        p.swipeable = b.swipeable;
-        p.passthrough = b.pass_through;
-        p.use_goy_style = true;
-        p.shape = u8::from(b.corner_radius < 1.0);
-        p.roundness = b.corner_radius.clamp(0.0, 50.0);
-        p.stroke_roundness = p.roundness;
-        p.stroke_size = b.stroke_width.clamp(0.0, 8.0);
-        p.stroke_color = argb(b.stroke_color);
-        p.button_color = argb(b.bg_color);
-        p.visible_in_game = b.in_game;
-        p.visible_in_menu = b.in_menu;
-        button.layouts = [p; 3];
+        buttons.push(make_button(b, first, &tokens, &at, screen, buttons.len()));
+    }
+    // Drawers: the drawer's own button opens and closes the buttons it holds, laid out beside it.
+    for (n, d) in raw.drawers.iter().enumerate().take(31) {
+        let id = n as u8 + 1;
+        let Some((at, screen)) = place(
+            &d.properties.dynamic_x,
+            &d.properties.dynamic_y,
+            d.properties.width,
+            d.properties.height,
+            scaled_at,
+            aspect,
+        ) else {
+            skipped += 1;
+            continue;
+        };
+        if at.w <= 0.0 || at.h <= 0.0 {
+            skipped += 1;
+            continue;
+        }
+        let unknown = "key.keyboard.unknown";
+        let mut button = make_button(&d.properties, unknown, &[], &at, screen, buttons.len());
+        button.drawer = id;
+        button.drawer_open = d.starting_visible;
         buttons.push(button);
+        let gap = 2.0 * REFERENCE_DENSITY;
+        let orientation = d.orientation.to_ascii_uppercase();
+        let (mut x, mut y) = (at.x, at.y);
+        for child in &d.button_properties {
+            let w = child.width * REFERENCE_DENSITY;
+            let h = child.height * REFERENCE_DENSITY;
+            let (cx, cy) = if orientation.contains("LEFT") {
+                x -= w + gap;
+                (x, at.y + (at.h - h) / 2.0)
+            } else if orientation.contains("UP") {
+                y -= h + gap;
+                (at.x + (at.w - w) / 2.0, y)
+            } else if orientation.contains("DOWN") {
+                y += if y == at.y { at.h + gap } else { h + gap };
+                (at.x + (at.w - w) / 2.0, y)
+            } else {
+                x += if x == at.x { at.w + gap } else { w + gap };
+                (x, at.y + (at.h - h) / 2.0)
+            };
+            let tokens: Vec<String> = child
+                .keycodes
+                .iter()
+                .filter(|c| **c != 0)
+                .filter_map(|c| token(*c))
+                .filter(|t| CustomButton::valid_token(t))
+                .collect();
+            let Some(first) = tokens.first() else {
+                skipped += 1;
+                continue;
+            };
+            let boxed = Boxed { x: cx, y: cy, w, h };
+            let mut button = make_button(child, first, &tokens, &boxed, screen, buttons.len());
+            button.group = id;
+            buttons.push(button);
+        }
     }
     let joystick = raw.joysticks.first().and_then(|j| {
         let (at, screen) = place(&j.dynamic_x, &j.dynamic_y, j.width, j.height, scaled_at, aspect)?;
