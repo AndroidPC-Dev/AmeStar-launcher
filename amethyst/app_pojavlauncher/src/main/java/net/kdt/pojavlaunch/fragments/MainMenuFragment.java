@@ -76,6 +76,8 @@ public class MainMenuFragment extends Fragment {
         mInstallJarButton.setText("Install .starling / .hmod file");
         mInstallJarButton.setOnClickListener(v -> mContentPicker.launch(new String[]{"*/*"}));
 
+        Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
+        mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
         mPlayButton.setOnClickListener(v -> startStarling());
 
         mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
