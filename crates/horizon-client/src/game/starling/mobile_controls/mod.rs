@@ -482,6 +482,13 @@ impl Game<'_> {
         id: WindowId,
     ) {
         self.mobile_init();
+        // The on-screen keyboard takes the fingers on it (the game under it gets nothing).
+        if self.osk_touch(
+            [t.location.x as f32, t.location.y as f32],
+            t.phase == TouchPhase::Ended,
+        ) {
+            return;
+        }
         let [w, h] = self.touch_size();
         if self.touch_menu_owns(t.id) {
             self.android_menu_touch(t, events, id);
