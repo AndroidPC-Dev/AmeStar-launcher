@@ -261,6 +261,14 @@ impl Game<'_> {
             Ok(layout) => {
                 self.android_release_touch_keys(true);
                 self.mobile.controls.settings.apply_amethyst_layout(layout);
+                self.mobile.controls.open_drawers = self
+                    .mobile
+                    .controls
+                    .settings
+                    .custom_buttons
+                    .iter()
+                    .filter(|b| b.drawer != 0 && b.drawer_open)
+                    .fold(0, |bits, b| bits | 1u32 << (b.drawer % 32));
                 let _ = self.mobile.controls.settings.save();
                 self.settings.touch = self.mobile.controls.settings.clone();
             }
