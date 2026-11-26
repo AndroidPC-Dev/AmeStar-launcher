@@ -1075,7 +1075,11 @@ impl Game<'_> {
         // On Android the keyboard's editor shows it (text_mirror.rs).
         #[cfg(target_os = "android")]
         if self.window.is_some() {
-            self.android_keyboard(keyboard);
+            // AmeStar: Horizon's own keyboard on the screen, not the phone's.
+            self.android_keyboard(false);
+            if keyboard && !self.touch.keyboard && !self.osk_is_open() {
+                self.pad_open_keyboard();
+            }
         }
         #[cfg(not(target_os = "android"))]
         if keyboard != self.touch.keyboard
@@ -1163,8 +1167,9 @@ impl Game<'_> {
     pub(super) fn touch_request_keyboard(&mut self) {
         self.touch.context = self.text_context().or(Some("manual"));
         self.touch.wanted = true;
-        self.touch.keyboard_request = true;
-        self.android_keyboard(true);
+        if !self.osk_is_open() {
+            self.pad_open_keyboard();
+        }
     }
 
     #[cfg(target_os = "android")]
@@ -1766,7 +1771,8 @@ impl Game<'_> {
     /// field (lifted with it over the keyboard, and out of a camera cutout's strip with it).
     fn chat_bar(&self, batch: &HudBatch) -> [[f32; 4]; 6] {
         let (w, h, gap) = (24.0, 16.0, 2.0);
-        let y = batch.height - 14.0 - h - 2.0;
+        // AmeStar: at the top right, out of the way of the keyboard's field.
+        let y = 2.0;
         let left = batch.width - 2.0 - 6.0 * w - 5.0 * gap;
         std::array::from_fn(|i| [left + i as f32 * (w + gap), y, w, h])
     }
