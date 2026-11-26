@@ -441,21 +441,16 @@ impl Settings {
         made
     }
 
-    fn save_imported(
-        game_home: &Path,
-        stem: &str,
-        layout: Imported,
-    ) -> std::io::Result<PresetMeta> {
-        let style = ControlStyle::GoyControl;
-        Self::ensure_system_storage(game_home, style);
-        let mut s = Self::default_for_style(style);
-        s.custom_buttons = layout.buttons;
+    /// Puts an Amethyst layout on these settings: its buttons, its movement joystick and its
+    /// forward lock replace the ones here.
+    pub fn apply_amethyst_layout(&mut self, layout: Imported) {
+        self.custom_buttons = layout.buttons;
         if let Some(lock) = layout.forward_lock {
-            s.forward_lock = lock;
+            self.forward_lock = lock;
         }
         if let Some(stick) = layout.joystick {
-            let slot = s.slot(Control::Move);
-            for layouts in &mut s.layouts {
+            let slot = self.slot(Control::Move);
+            for layouts in &mut self.layouts {
                 let kept = layouts[slot];
                 layouts[slot] = Placement {
                     center: stick.center,
@@ -465,6 +460,17 @@ impl Settings {
                 };
             }
         }
+    }
+
+    fn save_imported(
+        game_home: &Path,
+        stem: &str,
+        layout: Imported,
+    ) -> std::io::Result<PresetMeta> {
+        let style = ControlStyle::GoyControl;
+        Self::ensure_system_storage(game_home, style);
+        let mut s = Self::default_for_style(style);
+        s.apply_amethyst_layout(layout);
         let shown: String = format!("Amethyst: {stem}").chars().take(44).collect();
         let name = Self::unique_preset_name(game_home, style, &shown);
         let id = Self::allocate_unique_preset_id(game_home, style, &name);
