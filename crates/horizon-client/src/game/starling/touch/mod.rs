@@ -1077,6 +1077,7 @@ impl Game<'_> {
         if self.window.is_some() {
             // AmeStar: Horizon's own keyboard on the screen, not the phone's.
             self.android_keyboard(false);
+            self.osk_with_chat();
             if keyboard && !self.touch.keyboard && !self.osk_is_open() {
                 self.pad_open_keyboard();
             }
