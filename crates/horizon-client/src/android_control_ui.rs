@@ -2793,13 +2793,12 @@ impl TouchUi {
                 bh * 0.6,
                 color::with_alpha(rgba(16, 18, 24, 150), bubble_alpha),
             );
-            ui.rounded(
-                bx + bw * 0.3,
-                by + bh * 0.45,
-                bw * 0.4,
-                3.0,
-                1.5,
-                color::with_alpha(text_c, bubble_alpha * 0.8),
+            ui.icon(
+                Icon::Settings,
+                bx + (bw - 14.0) * 0.5,
+                by + 2.0,
+                14.0,
+                color::with_alpha(text_c, bubble_alpha * 0.9),
             );
         }
 
