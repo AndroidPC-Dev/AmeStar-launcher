@@ -147,6 +147,8 @@ impl Game<'_> {
     }
 
     pub(super) fn draw_pad_action_glyphs(&self, batch: &mut HudBatch) {
+        #[cfg(target_os = "android")]
+        return;
         let atlas = &self.gui.atlas;
         for (glyph, x, y) in self.pad_glyphs((batch.width, batch.height)) {
             pad_glyph::draw(batch, atlas, glyph, x, y);
