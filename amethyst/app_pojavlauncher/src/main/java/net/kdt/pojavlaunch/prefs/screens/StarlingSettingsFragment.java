@@ -1,6 +1,9 @@
 package net.kdt.pojavlaunch.prefs.screens;
 
 import android.content.SharedPreferences;
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -132,7 +135,31 @@ public class StarlingSettingsFragment extends LauncherPreferenceFragment {
         return p;
     }
 
+    private final ActivityResultLauncher<String[]> mSkinPicker = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(), this::importSkin);
+
+    /** Copies the chosen PNG into Starling/skins, where the game's skin page lists it. */
+    private void importSkin(Uri uri) {
+        if (uri == null) return;
+        File dir = new File(Tools.DIR_GAME_HOME + "/Starling/skins");
+        dir.mkdirs();
+        File out = new File(dir, "imported-" + System.currentTimeMillis() + ".png");
+        try (InputStream in = requireContext().getContentResolver().openInputStream(uri);
+             FileOutputStream os = new FileOutputStream(out)) {
+            byte[] buf = new byte[8192];
+            int n;
+            while (in != null && (n = in.read(buf)) > 0) os.write(buf, 0, n);
+            Toast.makeText(requireContext(), "Skin added: choose it in the game's Skin page", Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            Toast.makeText(requireContext(), "Could not import the skin", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void runAction(String action) {
+        if (action.equals("skin")) {
+            mSkinPicker.launch(new String[]{"image/png"});
+            return;
+        }
         if (action.startsWith("toast:")) {
             Toast.makeText(requireContext(), action.substring(6), Toast.LENGTH_SHORT).show();
         } else if (action.equals("reset")) {
