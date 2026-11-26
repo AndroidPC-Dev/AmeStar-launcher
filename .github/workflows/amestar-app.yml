@@ -68,6 +68,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: No engine - the game theme the manifest names
+        if: ${{ !inputs.engine }}
+        run: |
+          cat > amethyst/app_pojavlauncher/src/main/res/values/starling_stub.xml <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Starling.Game" parent="android:Theme.Material.NoActionBar"/>
+          </resources>
+          XML
+
       - name: Get JRE 8
         if: ${{ !inputs.light }}
         uses: dawidd6/action-download-artifact@v9
