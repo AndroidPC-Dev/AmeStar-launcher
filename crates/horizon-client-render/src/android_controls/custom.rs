@@ -16,6 +16,14 @@ pub struct CustomButton {
     pub custom_label: String,
     #[serde(default)]
     pub always_visible: bool,
+    /// Drawers: a drawer's own button (1 and up) opens and closes the buttons of its group.
+    #[serde(default)]
+    pub drawer: u8,
+    #[serde(default)]
+    pub drawer_open: bool,
+    /// The drawer this button is kept in (0: none).
+    #[serde(default)]
+    pub group: u8,
     pub layouts: [Placement; 3],
 }
 impl CustomButton {
@@ -26,6 +34,9 @@ impl CustomButton {
             third_key: String::new(),
             custom_label: String::new(),
             always_visible: false,
+            drawer: 0,
+            drawer_open: false,
+            group: 0,
             layouts: [Placement::new(
                 0.68 + (index % 3) as f32 * 0.1,
                 0.35 + (index / 3 % 3) as f32 * 0.12,
@@ -288,6 +299,10 @@ impl TouchControls {
         if self.editor.is_some() {
             return true;
         }
+        let group = self.settings.custom_buttons[index].group;
+        if group != 0 && self.open_drawers & (1u32 << (group % 32)) == 0 {
+            return false;
+        }
         if self.settings.custom_buttons[index].key == "mouse.virtual.toggle"
             && (!self.settings.virtual_mouse_enabled
                 || in_menu && self.settings.control_style == super::ControlStyle::Mcpe)
@@ -387,6 +402,15 @@ impl TouchControls {
                     self.clicked = true;
                 }
             }
+        }
+        if started
+            && let Some(index) = self.custom_at(point)
+            && self.settings.custom_buttons[index].drawer != 0
+        {
+            self.open_drawers ^= 1u32 << (self.settings.custom_buttons[index].drawer % 32);
+            self.clicked = true;
+            self.fingers.insert(id, (Role::Ignore, point));
+            return true;
         }
         if started
             && let Some(index) = self.custom_at(point)
