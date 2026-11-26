@@ -1780,6 +1780,14 @@ pub fn recovery_report(
     }
 }
 
+/// Amethyst's controls editor (the launcher's own screen), over the game.
+pub fn open_control_editor() {
+    with_activity(|env, activity| {
+        env.call_method(activity, "openControlEditor", "()V", &[])
+            .map(drop)
+    });
+}
+
 pub fn open_recovery() {
     with_activity(|env, activity| {
         env.call_method(activity, "openDiagnostics", "()V", &[])
