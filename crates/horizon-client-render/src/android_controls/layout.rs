@@ -1607,6 +1607,9 @@ impl Settings {
                 third_key: String::new(),
                 custom_label: label.into(),
                 always_visible: in_menu,
+                drawer: 0,
+                drawer_open: false,
+                group: 0,
                 layouts: [p; 3],
             }
         };
