@@ -1076,11 +1076,9 @@ impl Game<'_> {
         #[cfg(target_os = "android")]
         if self.window.is_some() {
             // AmeStar: Horizon's own keyboard on the screen, not the phone's.
-            self.android_keyboard(false);
-            self.osk_with_chat();
-            if keyboard && !self.touch.keyboard && !self.osk_is_open() {
-                self.pad_open_keyboard();
-            }
+            // Only the chat gets Starling's own keyboard; every other field the phone's.
+            let chat = self.osk_with_chat();
+            self.android_keyboard(keyboard && !chat);
         }
         #[cfg(not(target_os = "android"))]
         if keyboard != self.touch.keyboard
