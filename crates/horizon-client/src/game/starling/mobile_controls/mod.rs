@@ -494,6 +494,7 @@ impl Game<'_> {
         if self.osk_touch(
             [t.location.x as f32, t.location.y as f32],
             t.phase == TouchPhase::Ended,
+            t.phase == TouchPhase::Cancelled,
         ) {
             return;
         }
