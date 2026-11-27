@@ -45,6 +45,9 @@ enum Key {
     Backspace,
     NewLine,
     Done,
+    /// Empty space in a row (a phone's offset middle row): draws nothing, types nothing.
+    #[allow(dead_code)]
+    Gap,
 }
 
 /// A row of keys and their widths in key units (every row is 10 wide).
@@ -53,6 +56,7 @@ type Row = &'static [(Key, f32)];
 const fn c(ch: char) -> (Key, f32) {
     (Key::Char(ch), 1.0)
 }
+#[cfg(not(target_os = "android"))]
 const BOTTOM: Row = &[
     (Key::Shift, 1.5),
     (Key::Layer, 1.5),
@@ -61,6 +65,7 @@ const BOTTOM: Row = &[
     (Key::Done, 1.5),
 ];
 /// The bottom row on a field of many lines: New Line beside Done.
+#[cfg(not(target_os = "android"))]
 const BOTTOM_LINES: Row = &[
     (Key::Shift, 1.5),
     (Key::Layer, 1.5),
@@ -69,6 +74,87 @@ const BOTTOM_LINES: Row = &[
     (Key::Backspace, 1.5),
     (Key::Done, 1.5),
 ];
+
+/// A phone's keyboard follows the usual phone layout: the middle row offset, Shift and Delete
+/// beside the bottom letters, then symbols, comma, a wide Space, full stop and Done.
+#[cfg(target_os = "android")]
+const BOTTOM: Row = &[
+    (Key::Layer, 1.5),
+    c(','),
+    (Key::Space, 5.0),
+    c('.'),
+    (Key::Done, 1.5),
+];
+#[cfg(target_os = "android")]
+const BOTTOM_LINES: Row = &[
+    (Key::Layer, 1.5),
+    c(','),
+    (Key::Space, 3.5),
+    c('.'),
+    (Key::NewLine, 1.5),
+    (Key::Done, 1.5),
+];
+#[cfg(not(target_os = "android"))]
+const ROW_A: Row = &[
+        c('a'),
+        c('s'),
+        c('d'),
+        c('f'),
+        c('g'),
+        c('h'),
+        c('j'),
+        c('k'),
+        c('l'),
+        c('\''),
+    ];
+#[cfg(target_os = "android")]
+const ROW_A: Row = &[(Key::Gap, 0.5), c('a'), c('s'), c('d'), c('f'), c('g'), c('h'), c('j'), c('k'), c('l'), (Key::Gap, 0.5)];
+#[cfg(not(target_os = "android"))]
+const ROW_Z: Row = &[
+        c('z'),
+        c('x'),
+        c('c'),
+        c('v'),
+        c('b'),
+        c('n'),
+        c('m'),
+        c(','),
+        c('.'),
+        c('-'),
+    ];
+#[cfg(target_os = "android")]
+const ROW_Z: Row = &[(Key::Shift, 1.5), c('z'), c('x'), c('c'), c('v'), c('b'), c('n'), c('m'), (Key::Backspace, 1.5)];
+#[cfg(not(target_os = "android"))]
+const SYM_A: Row = &[
+        c(';'),
+        c(':'),
+        c('"'),
+        c('<'),
+        c('>'),
+        c('?'),
+        c('~'),
+        c('`'),
+        c('§'),
+        c('°'),
+    ];
+#[cfg(target_os = "android")]
+const SYM_A: Row = &[(Key::Gap, 0.5), c(';'), c(':'), c('"'), c('<'), c('>'), c('?'), c('~'), c('`'), c('\''), (Key::Gap, 0.5)];
+#[cfg(not(target_os = "android"))]
+const SYM_Z: Row = &[
+        c('é'),
+        c('è'),
+        c('à'),
+        c('ç'),
+        c('ù'),
+        c('ü'),
+        c('ö'),
+        c('ä'),
+        c('ß'),
+        c('ñ'),
+    ];
+#[cfg(target_os = "android")]
+const SYM_Z: Row = &[(Key::Shift, 1.5), c('é'), c('è'), c('à'), c('ç'), c('ü'), c('ö'), c('ä'), (Key::Backspace, 1.5)];
+
 const LETTERS: [Row; 5] = [
     &[
         c('1'),
@@ -94,30 +180,8 @@ const LETTERS: [Row; 5] = [
         c('o'),
         c('p'),
     ],
-    &[
-        c('a'),
-        c('s'),
-        c('d'),
-        c('f'),
-        c('g'),
-        c('h'),
-        c('j'),
-        c('k'),
-        c('l'),
-        c('\''),
-    ],
-    &[
-        c('z'),
-        c('x'),
-        c('c'),
-        c('v'),
-        c('b'),
-        c('n'),
-        c('m'),
-        c(','),
-        c('.'),
-        c('-'),
-    ],
+    ROW_A,
+    ROW_Z,
     BOTTOM,
 ];
 const SYMBOLS: [Row; 5] = [
@@ -145,30 +209,8 @@ const SYMBOLS: [Row; 5] = [
         c('}'),
         c('|'),
     ],
-    &[
-        c(';'),
-        c(':'),
-        c('"'),
-        c('<'),
-        c('>'),
-        c('?'),
-        c('~'),
-        c('`'),
-        c('§'),
-        c('°'),
-    ],
-    &[
-        c('é'),
-        c('è'),
-        c('à'),
-        c('ç'),
-        c('ù'),
-        c('ü'),
-        c('ö'),
-        c('ä'),
-        c('ß'),
-        c('ñ'),
-    ],
+    SYM_A,
+    SYM_Z,
     BOTTOM,
 ];
 const LETTERS_LINES: [Row; 5] = [LETTERS[0], LETTERS[1], LETTERS[2], LETTERS[3], BOTTOM_LINES];
@@ -178,12 +220,15 @@ const SYMBOLS_LINES: [Row; 5] = [SYMBOLS[0], SYMBOLS[1], SYMBOLS[2], SYMBOLS[3],
 /// height in its text size, all in dp (a line box is 1.45 sizes; the pack's font can be a
 /// little taller).
 #[cfg(target_os = "android")]
-const UNIT: f32 = 62.0;
+const UNIT: f32 = 80.0;
 #[cfg(not(target_os = "android"))]
 const UNIT: f32 = 50.0;
+#[cfg(target_os = "android")]
+const GAP: f32 = 7.0;
+#[cfg(not(target_os = "android"))]
 const GAP: f32 = 6.0;
 #[cfg(target_os = "android")]
-const KEY_H: f32 = 50.0;
+const KEY_H: f32 = 65.0;
 #[cfg(not(target_os = "android"))]
 const KEY_H: f32 = 38.0;
 const PANEL_PAD: f32 = 12.0;
@@ -259,6 +304,10 @@ pub struct Keyboard {
     suggests: bool,
     /// The right stick has picked and not come back to rest.
     stick_out: bool,
+    /// A finger is down on this key (a phone): lit only while it is, and Delete repeats.
+    down: Option<(usize, usize)>,
+    down_at: Option<std::time::Instant>,
+    repeated: Option<std::time::Instant>,
 }
 impl Default for Keyboard {
     fn default() -> Self {
@@ -272,6 +321,9 @@ impl Default for Keyboard {
             lines: false,
             suggests: false,
             stick_out: false,
+            down: None,
+            down_at: None,
+            repeated: None,
         }
     }
 }
@@ -382,6 +434,7 @@ impl Keyboard {
             Key::Backspace => Some(Output::Backspace),
             Key::NewLine => Some(Output::Enter),
             Key::Done => Some(Output::Done),
+            Key::Gap => None,
         }
     }
     /// A pad button while the keyboard is open; `None` when it does nothing
@@ -446,9 +499,27 @@ impl Keyboard {
     /// the field it types into is in the lower half.
     /// The panel's frame: left, top, width of the keys and the keys' height, for a screen of
     /// `w` by `h` dp and `hint_h` of hint lines below the keys.
+    /// Key width, key height and gap in dp: the constants, drawn smaller where the screen is
+    /// too small for them (a phone's keyboard keeps the panel on the screen).
+    fn metrics(w: f32, h: f32) -> (f32, f32, f32) {
+        #[cfg(target_os = "android")]
+        {
+            let across = (w - 2.0 * PANEL_PAD - 24.0) / (10.0 * UNIT + 9.0 * GAP);
+            let down = (h - 56.0 - 16.0 - 2.0 * PANEL_PAD) / (5.0 * KEY_H + 4.0 * GAP);
+            let k = across.min(down).clamp(0.3, 1.0);
+            (UNIT * k, KEY_H * k, GAP * k)
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = (w, h);
+            (UNIT, KEY_H, GAP)
+        }
+    }
+
     fn frame(w: f32, h: f32, at_top: bool, hint_h: f32) -> (f32, f32, f32, f32) {
-        let width = 10.0 * UNIT + 9.0 * GAP;
-        let keys_h = 5.0 * KEY_H + 4.0 * GAP;
+        let (unit, key_h, gap_k) = Self::metrics(w, h);
+        let width = 10.0 * unit + 9.0 * gap_k;
+        let keys_h = 5.0 * key_h + 4.0 * gap_k;
         let gap = if hint_h > 0.0 { HINT_GAP } else { 0.0 };
         let height = PANEL_PAD + keys_h + gap + hint_h + PANEL_PAD;
         // On a phone the keyboard sits at the right, below the chat bar.
@@ -466,16 +537,20 @@ impl Keyboard {
     /// The key under the cursor (row, column), or `None` outside the keys.
     pub fn key_under(&self, ui: &Ui, at_top: bool) -> Option<(usize, usize)> {
         let (x0, y0, ..) = Self::frame(ui.w, ui.h, at_top, 0.0);
+        let (unit, key_h, gap_k) = Self::metrics(ui.w, ui.h);
         let (cx, cy) = ui.cursor;
         for (r, row) in self.rows().iter().enumerate() {
-            let y = y0 + r as f32 * (KEY_H + GAP);
-            if cy < y || cy >= y + KEY_H {
+            let y = y0 + r as f32 * (key_h + gap_k);
+            if cy < y || cy >= y + key_h {
                 continue;
             }
-            for (i, (_, units)) in row.iter().enumerate() {
+            for (i, (key, units)) in row.iter().enumerate() {
+                if *key == Key::Gap {
+                    continue;
+                }
                 let (left, _) = Self::span(row, i);
-                let x = x0 + left * (UNIT + GAP);
-                let w = units * UNIT + (units - 1.0) * GAP;
+                let x = x0 + left * (unit + gap_k);
+                let w = units * unit + (units - 1.0) * gap_k;
                 if cx >= x && cx < x + w {
                     return Some((r, i));
                 }
@@ -494,6 +569,48 @@ impl Keyboard {
             && cy < y0 + keys_h + PANEL_PAD
     }
 
+    /// A finger lands on or moves over a key (`None`: off the keys): it is the lit one.
+    pub fn touch_down(&mut self, key: Option<(usize, usize)>) {
+        if self.down != key {
+            self.down = key;
+            self.down_at = key.map(|_| std::time::Instant::now());
+            self.repeated = None;
+        }
+    }
+
+    /// The finger lifts: the key under it types, unless Delete already repeated.
+    pub fn touch_up(&mut self, key: Option<(usize, usize)>) -> Option<Output> {
+        let held = self.repeated.is_some();
+        self.down = None;
+        self.down_at = None;
+        self.repeated = None;
+        let (row, col) = key?;
+        if held && self.rows()[row][col].0 == Key::Backspace {
+            return None;
+        }
+        self.tap(row, col)
+    }
+
+    /// Held on Delete: it repeats, after a short wait and then quickly.
+    pub fn repeat(&mut self) -> Option<Output> {
+        const FIRST: std::time::Duration = std::time::Duration::from_millis(380);
+        const EVERY: std::time::Duration = std::time::Duration::from_millis(45);
+        let (row, col) = self.down?;
+        if self.rows()[row][col].0 != Key::Backspace {
+            return None;
+        }
+        let now = std::time::Instant::now();
+        let due = match self.repeated {
+            None => now.duration_since(self.down_at?) >= FIRST,
+            Some(last) => now.duration_since(last) >= EVERY,
+        };
+        if !due {
+            return None;
+        }
+        self.repeated = Some(now);
+        Some(Output::Backspace)
+    }
+
     /// A tap on the key at `row`, `column`.
     pub fn tap(&mut self, row: usize, col: usize) -> Option<Output> {
         self.row = row;
@@ -507,11 +624,12 @@ impl Keyboard {
         #[cfg(target_os = "android")]
         let hints: Vec<String> = Vec::new();
         #[cfg(not(target_os = "android"))]
-        let width_for_hints = 10.0 * UNIT + 9.0 * GAP;
+        let width_for_hints = 10.0 * Self::metrics(ui.w, ui.h).0 + 9.0 * Self::metrics(ui.w, ui.h).2;
         #[cfg(not(target_os = "android"))]
         let hints = self.hint_lines(ui, glyphs, width_for_hints);
         #[cfg(target_os = "android")]
         let _ = glyphs;
+        let (unit, key_h, gap_k) = Self::metrics(ui.w, ui.h);
         let line_h = HINT_LINE * ui_theme::small();
         let (x0, y0, width, keys_h) =
             Self::frame(ui.w, ui.h, at_top, hints.len() as f32 * line_h);
@@ -537,11 +655,18 @@ impl Keyboard {
             color::border(),
         );
         for (r, row) in self.rows().iter().enumerate() {
-            let y = y0 + r as f32 * (KEY_H + GAP);
+            let y = y0 + r as f32 * (key_h + gap_k);
             for (i, (key, units)) in row.iter().enumerate() {
                 let (left, _) = Self::span(row, i);
-                let x = x0 + left * (UNIT + GAP);
-                let w = units * UNIT + (units - 1.0) * GAP;
+                let x = x0 + left * (unit + gap_k);
+                let w = units * unit + (units - 1.0) * gap_k;
+                if *key == Key::Gap {
+                    continue;
+                }
+                // A phone shows only the key under the finger, and only while it is down.
+                #[cfg(target_os = "android")]
+                let focused = self.down == Some((r, i));
+                #[cfg(not(target_os = "android"))]
                 let focused = r == self.row && i == self.col;
                 let lit = matches!(key, Key::Shift) && (self.shift || self.caps)
                     || matches!(key, Key::Layer) && self.symbols;
@@ -552,7 +677,7 @@ impl Keyboard {
                 } else {
                     (color::raised(), color::text())
                 };
-                ui.rounded(x, y, w, KEY_H, ui_theme::radius(), plate);
+                ui.rounded(x, y, w, key_h, ui_theme::radius(), plate);
                 let label = match key {
                     Key::Char(ch) => self.letter(*ch),
                     Key::Shift if self.caps => "CAPS".into(),
@@ -560,9 +685,16 @@ impl Keyboard {
                     Key::Layer if self.symbols => "abc".into(),
                     Key::Layer => "&123".into(),
                     Key::Space => tr("horizon.osk.space", "Space"),
-                    Key::Backspace => tr("horizon.osk.delete", "Delete"),
+                    Key::Backspace => {
+                        if cfg!(target_os = "android") {
+                            "\u{232b}".into()
+                        } else {
+                            tr("horizon.osk.delete", "Delete")
+                        }
+                    }
                     Key::NewLine => tr("horizon.osk.new_line", "New Line"),
                     Key::Done => tr("gui.done", "Done"),
+                    Key::Gap => String::new(),
                 };
                 // Smaller when the label is wider than its key (a long translation).
                 let room = w - 2.0 * LABEL_PAD;
@@ -572,7 +704,7 @@ impl Keyboard {
                 ui.text_line(
                     Face::Medium,
                     size,
-                    KEY_H,
+                    key_h,
                     x + ((w - lw) / 2.0).round(),
                     y,
                     ink,
