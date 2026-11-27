@@ -1,6 +1,6 @@
 # AmeStar progress (branch dev)
 
-Last completed file: touch/mod.rs (chat opens Starling OSK instantly; drawers, clear buttons added)
+Last completed file: touch/mod.rs (Starling OSK only in chat, bigger phone layout, Delete repeat; joystick import fix)
 
 Next exact task: user tests drawers/OSK/transparent buttons on device; then caret tap in chat, trim Starling menus. Watch CustomControlsActivity start from the game process, layout import (pojav.rs), then trim Starling menus.
 
