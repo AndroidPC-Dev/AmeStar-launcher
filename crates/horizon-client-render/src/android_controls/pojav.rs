@@ -83,6 +83,10 @@ struct RawJoystick {
     width: f64,
     height: f64,
     opacity: Option<f32>,
+    #[serde(rename = "bgColor")]
+    bg_color: Option<i64>,
+    #[serde(rename = "strokeColor")]
+    stroke_color: Option<i64>,
     #[serde(rename = "forwardLock")]
     forward_lock: bool,
 }
@@ -94,6 +98,8 @@ pub struct Imported {
     /// The movement joystick, when the layout has one.
     pub joystick: Option<Placement>,
     pub forward_lock: Option<bool>,
+    /// The joystick's base colour and outline, as the editor saved them.
+    pub joystick_colors: Option<(u32, u32)>,
     /// Buttons left out: hidden ones, and ones whose keys Starling has no name for.
     pub skipped: usize,
 }
@@ -463,10 +469,12 @@ pub fn convert(json: &str, aspect: f32) -> Result<Imported, String> {
     }
     let joystick = raw.joysticks.first().and_then(|j| {
         let (at, screen) = place(&j.dynamic_x, &j.dynamic_y, j.width, j.height, scaled_at, aspect)?;
+        // Amethyst draws the joystick's circle in the smaller side of its box.
+        let side = at.w.min(at.h);
         let mut p = Placement::new(
             ((at.x + at.w / 2.0) / screen[0]) as f32,
             ((at.y + at.h / 2.0) / screen[1]) as f32,
-            (at.h / screen[1]) as f32,
+            (side / screen[1]) as f32,
         );
         p.opacity = j.opacity.unwrap_or(1.0).clamp(0.0, 1.0);
         Some(p)
@@ -475,6 +483,10 @@ pub fn convert(json: &str, aspect: f32) -> Result<Imported, String> {
         buttons,
         joystick,
         forward_lock: raw.joysticks.first().map(|j| j.forward_lock),
+        joystick_colors: raw
+            .joysticks
+            .first()
+            .and_then(|j| Some((argb(j.bg_color?), argb(j.stroke_color?)))),
         skipped,
     })
 }
@@ -539,6 +551,13 @@ impl Settings {
         self.custom_buttons = layout.buttons;
         if let Some(lock) = layout.forward_lock {
             self.forward_lock = lock;
+        }
+        if let Some((base, stroke)) = layout.joystick_colors {
+            let style = &mut self.joystick_style;
+            style.base_color = base;
+            style.base_stroke_color = stroke;
+            // The colours carry their own transparency.
+            style.base_opacity = 1.0;
         }
         if let Some(stick) = layout.joystick {
             let slot = self.slot(Control::Move);
