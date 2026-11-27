@@ -2425,6 +2425,11 @@ impl Game<'_> {
             return;
         }
         let suggests = self.screen == Screen::Chat && self.title.is_none() && !self.dialog_open();
+        // The phone's own keyboard everywhere but the chat.
+        #[cfg(target_os = "android")]
+        if !suggests {
+            return;
+        }
         self.pad.menu.osk = Some(Keyboard::new(self.pad_enter_keeps_typing(), suggests));
     }
 
@@ -2448,17 +2453,24 @@ impl Game<'_> {
         }
     }
 
-    /// The chat opens with the keyboard on a phone and keeps it: a tap elsewhere does not put it
-    /// away. Opened once per chat; the keyboard's own Close key puts it away for that chat.
-    pub(in crate::game) fn osk_with_chat(&mut self) {
-        let chat = self.screen == Screen::Chat && self.title.is_none() && !self.dialog_open();
+    /// On a phone Starling's keyboard belongs to the chat alone: it opens with the chat, stays
+    /// while it is open (a tap elsewhere does not put it away), and goes with it (send, Esc, back,
+    /// the chat key again). Its own Close key puts it away for that chat. Returns whether the
+    /// chat is open.
+    pub(in crate::game) fn osk_with_chat(&mut self) -> bool {
+        let chat = self.screen == Screen::Chat
+            && self.title.is_none()
+            && !self.dialog_open()
+            && !self.ui.in_bed_chat;
         if !chat {
-            return;
-        }
-        if self.pad.menu.osk.is_none() && !self.pad.menu.osk_dismissed {
+            self.pad.menu.osk = None;
+            self.pad.menu.osk_dismissed = false;
+        } else if self.pad.menu.osk.is_none() && !self.pad.menu.osk_dismissed {
             self.pad.menu.osk_dismissed = true;
             self.pad_open_keyboard();
         }
+        self.osk_repeat();
+        chat
     }
 
     /// Whether the on-screen keyboard is up.
@@ -2468,7 +2480,7 @@ impl Game<'_> {
 
     /// A finger on the on-screen keyboard (`p` in window pixels): true when it is on the
     /// panel, so the game under it gets nothing. A key types when the finger lifts.
-    pub(in crate::game) fn osk_touch(&mut self, p: [f32; 2], lifted: bool) -> bool {
+    pub(in crate::game) fn osk_touch(&mut self, p: [f32; 2], lifted: bool, cancelled: bool) -> bool {
         if self.pad.menu.osk.is_none() {
             return false;
         }
@@ -2481,21 +2493,34 @@ impl Game<'_> {
                 .is_some_and(|f| f.center().1 > batch.height / 2.0);
         let gui = self.interface_point(p, batch.scale);
         let ui = horizon_client::ui_theme::Ui::new(&self.gui.atlas, &mut batch, gui);
-        let Some(keyboard) = self.pad.menu.osk.as_ref() else {
+        let Some(keyboard) = self.pad.menu.osk.as_mut() else {
             return false;
         };
         let on_panel = keyboard.panel_under(&ui, at_top);
         let key = keyboard.key_under(&ui, at_top);
         drop(ui);
-        if on_panel && lifted {
-            if let Some((row, col)) = key
-                && let Some(keyboard) = self.pad.menu.osk.as_mut()
-                && let Some(out) = keyboard.tap(row, col)
-            {
+        let Some(keyboard) = self.pad.menu.osk.as_mut() else {
+            return false;
+        };
+        if cancelled {
+            keyboard.touch_down(None);
+        } else if lifted {
+            if on_panel && let Some(out) = keyboard.touch_up(key) {
                 self.pad_osk_output(out);
+            } else if !on_panel {
+                keyboard.touch_down(None);
             }
+        } else if on_panel {
+            keyboard.touch_down(key);
         }
         on_panel
+    }
+
+    /// Delete held on the keyboard types again (called every frame).
+    pub(in crate::game) fn osk_repeat(&mut self) {
+        if let Some(out) = self.pad.menu.osk.as_mut().and_then(|k| k.repeat()) {
+            self.pad_osk_output(out);
+        }
     }
 
     /// What a key of the on-screen keyboard does: the same as a typed key in
